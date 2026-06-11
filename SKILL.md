@@ -56,7 +56,7 @@ Remote connectors use **Streamable HTTP only**. There is nothing to install on y
    - User authorize + token exchange per `https://www.doctorsim.com/auth.md`
 4. At the consent screen, grant least privilege. For exploratory use, approve **`orders:read balance:read`** only; add `orders:write` (debits real PRO credits) deliberately and re-consent when you need it.
 5. The connector sends `Authorization: Bearer {access_token}` on every MCP `POST`. Access tokens last 1 hour; the connector refreshes automatically.
-6. Use MCP tools (`get_countries`, `get_operator_rates`, `create_order`, `get_balance`, …).
+6. Use MCP tools (`get_countries`, `get_operator_rates`, `preview_order`, `create_order`, `get_balance`, …). `get_operator_rates` returns the exact `service_fee_eur/usd` and `total_cost_eur/usd` per price point; call `preview_order` to confirm the full cost (incl. optional 0.99 EUR SMS fee) before `create_order`.
 
 > The `api_key` path (`Authorization: Bearer {api_id}:{api_secret}`) is for **direct API / server integrations only** — remote MCP connectors must use the OAuth flow above.
 
