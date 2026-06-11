@@ -90,5 +90,5 @@ Orders debit PRO account credits. Fund credits via the web dashboard (pro-pro ch
 | API explorer | https://www.doctorsim.com/api-docs/ |
 | MCP server card | https://www.doctorsim.com/.well-known/mcp/server-card.json |
 | MCP endpoint (Streamable HTTP) | https://api.doctorsim.com/mcp |
-| Protected resource | https://api.doctorsim.com/v2/.well-known/oauth-protected-resource/v2 |
+| Protected resource | https://api.doctorsim.com/.well-known/oauth-protected-resource/v2 |
 | Agent skills index | https://www.doctorsim.com/.well-known/agent-skills/index.json |
