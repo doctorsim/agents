@@ -56,7 +56,22 @@ Remote connectors use **Streamable HTTP only**. There is nothing to install on y
    - User authorize + token exchange per `https://www.doctorsim.com/auth.md`
 4. At the consent screen, approve the connector's requested scopes. The recommended grant is **`orders:read orders:write balance:read`** — placing orders is the primary purpose of this connector, so `orders:write` is included (it debits real PRO credits on `create_order`). Approve a read-only subset only if the integration genuinely never places orders.
 5. The connector sends `Authorization: Bearer {access_token}` on every MCP `POST`. Access tokens last 1 hour; the connector refreshes automatically.
-6. Use MCP tools (`get_countries`, `get_operator_rates`, `preview_order`, `create_order`, `get_balance`, …). `get_operator_rates` returns the exact `service_fee_eur/usd` and `total_cost_eur/usd` per price point; call `preview_order` to confirm the full cost (incl. optional 0.99 EUR SMS fee) before `create_order`.
+6. Use MCP tools (`lookup_carrier`, `get_operator_service_types`, `get_operator_rates`, `preview_order`, `create_order`, `get_balance`, …).
+
+### Mobile top-up flow (MCP)
+
+When the user provides a **phone number**:
+
+1. **`lookup_carrier`** with E.164 phone (`+522221231231`) — always first; returns `id_operator` and country.
+2. If lookup fails, ask the carrier or use **`get_operators`** for the country.
+3. Ask the user: **airtime, bundles, or data?** If bundle/data, ask what they need (e.g. 5GB, WhatsApp).
+4. **`get_operator_service_types`** — pick the `id_operator` for the chosen type (bundle operators differ from airtime).
+5. **`get_operator_rates`** with `q` to search `description` / `product_name` (e.g. `q="5GB whatsapp"`).
+6. **`preview_order`** then **`create_order`** with `price_token` and `phone`.
+
+Do **not** use **`search_products`** alone for phone top-ups — it browses the country catalog by brand name. Use **`search_products`** with `operator_id` + `q` only as an alternative rate search API.
+
+`get_operator_rates` returns `service_fee_eur/usd` and `total_cost_eur/usd` per price point; call `preview_order` before `create_order`.
 
 > The `api_key` path (`Authorization: Bearer {api_id}:{api_secret}`) is for **direct API / server integrations only** — remote MCP connectors must use the OAuth flow above.
 

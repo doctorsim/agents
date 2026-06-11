@@ -6,12 +6,33 @@ Both product types use the same order and monitoring endpoints. Discovery differ
 
 ## Mobile top-up
 
+### Recommended agent conversation
+
+When the user gives a phone number (e.g. `+52 222 123 1231`):
+
+1. **Always run carrier lookup first** — do not ask the user to guess the network if lookup is available.  
+   MCP: `lookup_carrier` · API: `GET https://api.doctorsim.com/v2/carriers/lookup/{phone}`
+
+2. **If lookup fails**, ask which carrier/network the number uses, or list operators for the country.
+
+3. **Ask what they want to buy** — e.g. *"Do you want airtime (saldo), a bundle/package, or mobile data? If bundle or data, what are you looking for (e.g. 5GB, WhatsApp)?"*
+
+4. **List service types** for the identified operator — each type (airtime vs bundle vs data) has its own `id_operator`.  
+   MCP: `get_operator_service_types` · API: `GET https://api.doctorsim.com/v2/operators/{id}/service-types`
+
+5. **Fetch and filter rates** for the chosen service type. Search bundle/data descriptions with `q` (e.g. `q=5GB whatsapp`).  
+   MCP: `get_operator_rates` · API: `GET https://api.doctorsim.com/v2/operators/{child_id}/rates?q=…`
+
+6. **Preview and place order** with the rate `token` and the same phone number.
+
+### API steps
+
 1. **Lookup phone number** — identify carrier and country from E.164 MSISDN  
    `GET https://api.doctorsim.com/v2/carriers/lookup/{phone}`
 
-2. **Select airtime, data, or bundle** — list service types, then pick a rate `token`  
+2. **Select airtime, data, or bundle** — list service types, then pick a rate `token` (use `q` on rates for bundle/data search)  
    `GET https://api.doctorsim.com/v2/operators/{id}/service-types`  
-   `GET https://api.doctorsim.com/v2/operators/{id}/rates`
+   `GET https://api.doctorsim.com/v2/operators/{id}/rates?q=5GB+whatsapp`
 
 3. **Place order** — send `price_token` and recipient `phone` (credits deducted on create)  
    `POST https://api.doctorsim.com/v2/orders`
@@ -39,7 +60,7 @@ Optional: `operator_id` / `country_id` as cross-checks when using `price_token`.
    `GET https://api.doctorsim.com/v2/countries`
 
 2. **Search catalog** — find brand/product, then load rates and copy the `token`  
-   `GET https://api.doctorsim.com/v2/products/search?country={iso_or_id}`  
+   `GET https://api.doctorsim.com/v2/products/search?country={iso_or_id}` (default 50/page; when `meta.has_more` is true, pass `cursor=meta.cursor`)  
    `GET https://api.doctorsim.com/v2/operators/{id}/rates`
 
 3. **Place order** — send `price_token` (some products do not require `phone`)  
