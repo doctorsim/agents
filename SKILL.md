@@ -67,11 +67,12 @@ When the user provides a **phone number**:
 3. Ask the user: **airtime, bundles, or data?** If bundle/data, ask what they need (e.g. 5GB, WhatsApp).
 4. **`get_operator_service_types`** — pick the `id_operator` for the chosen type (bundle operators differ from airtime).
 5. **`get_operator_rates`** with `q` to search `description` / `product_name` (e.g. `q="5GB whatsapp"`).
-6. **`preview_order`** then **`create_order`** with `price_token` and `phone`.
+6. **`preview_order`** — **mandatory** before placement. Show the user the full breakdown (recharge, service fee, SMS, credit applied, amount due). Do not ask "shall I place the order?" until preview is shown.
+7. **`create_order`** — only after `preview_order` **and** explicit user confirmation (e.g. "yes"). Never skip preview.
 
 Do **not** use **`search_products`** alone for phone top-ups — it browses the country catalog by brand name. Use **`search_products`** with `operator_id` + `q` only as an alternative rate search API.
 
-`get_operator_rates` returns `service_fee_eur/usd` and `total_cost_eur/usd` per price point; call `preview_order` before `create_order`.
+`get_operator_rates` totals are indicative; **`preview_order`** is the authoritative checkout breakdown for the authenticated account.
 
 > The `api_key` path (`Authorization: Bearer {api_id}:{api_secret}`) is for **direct API / server integrations only** — remote MCP connectors must use the OAuth flow above.
 

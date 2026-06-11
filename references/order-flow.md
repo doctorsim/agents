@@ -23,7 +23,13 @@ When the user gives a phone number (e.g. `+52 222 123 1231`):
 5. **Fetch and filter rates** for the chosen service type. Search bundle/data descriptions with `q` (e.g. `q=5GB whatsapp`).  
    MCP: `get_operator_rates` · API: `GET https://api.doctorsim.com/v2/operators/{child_id}/rates?q=…`
 
-6. **Preview and place order** with the rate `token` and the same phone number.
+6. **Preview the exact cost** — mandatory before placement; show the user the full breakdown (recharge, service fee, SMS if any, credit applied, amount due).  
+   MCP: `preview_order` · API: `POST https://api.doctorsim.com/v2/orders/preview`
+
+7. **Ask for explicit confirmation** only after showing the preview breakdown.
+
+8. **Place order** with the same fields as preview.  
+   MCP: `create_order` · API: `POST https://api.doctorsim.com/v2/orders`
 
 ### API steps
 
@@ -34,10 +40,13 @@ When the user gives a phone number (e.g. `+52 222 123 1231`):
    `GET https://api.doctorsim.com/v2/operators/{id}/service-types`  
    `GET https://api.doctorsim.com/v2/operators/{id}/rates?q=5GB+whatsapp`
 
-3. **Place order** — send `price_token` and recipient `phone` (credits deducted on create)  
+3. **Preview order** — mandatory; present full price breakdown to the user  
+   `POST https://api.doctorsim.com/v2/orders/preview`
+
+4. **Place order** — only after preview and explicit user confirmation  
    `POST https://api.doctorsim.com/v2/orders`
 
-4. **Monitor** — poll order status or register a webhook (see [Webhooks](https://www.doctorsim.com/agents/references/webhooks.md))  
+5. **Monitor** — poll order status or register a webhook (see [Webhooks](https://www.doctorsim.com/agents/references/webhooks.md))  
    `GET https://api.doctorsim.com/v2/orders/{id}`
 
 ### Top-up order body (typical)
