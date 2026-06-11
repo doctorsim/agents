@@ -1,0 +1,14 @@
+{
+  "$schema": "https://agentskills.io/schemas/discovery/v0.2.0/schema.json",
+  "version": "0.2.0",
+  "publisher": "doctorSIM",
+  "skills": [
+    {
+      "name": "doctorsim",
+      "type": "skill",
+      "description": "Browse, fund, and place mobile top-up and gift card orders via doctorSIM API v2 or MCP.",
+      "url": "https://www.doctorsim.com/agents/SKILL.md",
+      "sha256": "c8d8a448d6d3992eb7455864de84068cf6f3c83c1532af4d34d033da140476a2"
+    }
+  ]
+}
