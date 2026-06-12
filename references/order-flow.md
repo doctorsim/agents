@@ -26,9 +26,9 @@ When the user gives a phone number (e.g. `+52 222 123 1231`):
 6. **Preview the exact cost** — mandatory before placement; show the user the full breakdown (recharge, service fee, SMS if any, credit applied, amount due).  
    MCP: `preview_order` · API: `POST https://api.doctorsim.com/v2/orders/preview`
 
-7. **Ask for explicit confirmation** only after showing the preview breakdown.
+7. **Ask for confirmation** after showing the preview breakdown.
 
-8. **Place order** with the same fields as preview.  
+8. **Place order** as soon as the user confirms (e.g. replies "yes") — reuse the same fields and `price_token` from the preview. You do **not** need to run a fresh preview in the same turn.  
    MCP: `create_order` · API: `POST https://api.doctorsim.com/v2/orders`
 
 ### API steps
@@ -43,7 +43,7 @@ When the user gives a phone number (e.g. `+52 222 123 1231`):
 3. **Preview order** — mandatory; present full price breakdown to the user  
    `POST https://api.doctorsim.com/v2/orders/preview`
 
-4. **Place order** — only after preview and explicit user confirmation  
+4. **Place order** — as soon as the user confirms (e.g. "yes") after the preview; reuse the same `token`. No need to re-preview in the same turn.  
    `POST https://api.doctorsim.com/v2/orders`
 
 5. **Monitor** — poll order status or register a webhook (see [Webhooks](https://www.doctorsim.com/agents/references/webhooks.md))  

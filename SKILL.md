@@ -91,6 +91,8 @@ Orders debit PRO account credits. Fund credits via the web dashboard (pro-pro ch
 
 ## References
 
+- [MCP Server guide](https://www.doctorsim.com/api-docs/mcp.html)
+- [MCP reference (markdown)](https://www.doctorsim.com/agents/references/mcp-server.md)
 - [API overview](https://www.doctorsim.com/agents/references/api-overview.md)
 - [Order flow](https://www.doctorsim.com/agents/references/order-flow.md)
 - [Webhooks](https://www.doctorsim.com/agents/references/webhooks.md)
