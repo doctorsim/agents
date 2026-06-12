@@ -12,6 +12,6 @@ Register via `POST /v2/webhooks/orders` with HTTPS callback URL.
 
 Webhook payloads include HMAC signature headers documented in OpenAPI. Verify before acting on agent-side.
 
-## Agentic orders
+## API and MCP orders
 
-Orders placed via API/MCP receive Zendesk tag `agentic_api_order`. Status sync updates `api_webhook_order_watch` when ticket status changes.
+Webhook events apply to orders placed through the API or MCP connector. Poll `GET /v2/orders/{id}` if you do not use webhooks.
