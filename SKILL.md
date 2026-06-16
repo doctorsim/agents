@@ -20,10 +20,16 @@ Use this skill when the user wants to recharge a mobile phone, buy a gift card, 
 
 ## Authentication
 
-Two supported methods (prefer OAuth for interactive agents):
+**Default (ChatGPT / MCP): guest checkout — no login required.** Browse catalog, preview prices, and get a `payment_link` on doctorsim.com without linking an account.
 
-1. **OAuth2/OIDC** — discovery at `https://www.doctorsim.com/.well-known/oauth-authorization-server`
-2. **API keys** — `Authorization: Bearer {api_id}:{api_secret}` from Mi Cuenta → API
+**Optional OAuth** — link your doctorSIM account when the user wants:
+- PRO prepaid credits (`checkout_mode=credits`)
+- Order history (`list_orders`)
+- Credit balance or webhooks (PRO only)
+
+OAuth discovery: `https://www.doctorsim.com/.well-known/oauth-authorization-server`
+
+**API keys** (server integrations only): `Authorization: Bearer {api_id}:{api_secret}` from Mi Cuenta → API
 
 Full guide: `https://www.doctorsim.com/auth.md`
 
@@ -33,30 +39,31 @@ Full guide: `https://www.doctorsim.com/auth.md`
 # Health check (no auth)
 curl -s https://api.doctorsim.com/v2/status
 
-# List countries (auth required)
-curl -s -H "Authorization: Bearer LIVE_ID:LIVE_SECRET" \
-  https://api.doctorsim.com/v2/countries
+# List countries (guest when agentic_mcp_guest is ON, else API key/OAuth)
+curl -s https://api.doctorsim.com/v2/countries
 ```
 
 ## MCP (remote — Claude.ai, ChatGPT, Grok)
 
-Remote connectors use **Streamable HTTP only**. There is nothing to install on your machine — the MCP endpoint runs on Cloudflare Workers at the edge and forwards your OAuth Bearer token to API v2.
+Remote connectors use **Streamable HTTP only**. The MCP endpoint runs on Cloudflare Workers and forwards an optional OAuth Bearer token to API v2.
 
 **Connector URL:** `https://api.doctorsim.com/mcp`
 
 **Server card:** `https://www.doctorsim.com/.well-known/mcp/server-card.json` (primary transport: `streamable-http`)
 
-### Setup
+### Setup (guest-first)
 
-1. In your agent product, add a **custom MCP connector** with URL `https://api.doctorsim.com/mcp`.
-2. **Leave any "OAuth Client ID / Secret" fields blank.** This server supports Dynamic Client Registration (RFC 7591) and issues a **public client** (`token_endpoint_auth_method: none`) authenticated with **authorization code + PKCE** — there is no client secret to paste. The connector handles discovery → register → authorize → token automatically.
-3. Complete OAuth in the browser popup when prompted:
+1. Add a **custom MCP connector** with URL `https://api.doctorsim.com/mcp`.
+2. **No OAuth required at setup** — catalog and payment-link checkout tools use `noauth`. ChatGPT can connect immediately.
+3. **Optional account linking** — only when the user asks for PRO credits, order history, or saved settings:
+   - Leave OAuth Client ID/Secret blank; DCR + PKCE handles registration.
    - Authorization server: `https://www.doctorsim.com/.well-known/oauth-authorization-server`
-   - Dynamic Client Registration: `POST https://www.doctorsim.com/oauth/register`
-   - User authorize + token exchange per `https://www.doctorsim.com/auth.md`
-4. At the consent screen, approve the connector's requested scopes. The recommended grant is **`orders:read orders:write balance:read`** — placing orders is the primary purpose of this connector, so `orders:write` is included (it debits real PRO credits on `create_order`). Approve a read-only subset only if the integration genuinely never places orders.
-5. The connector sends `Authorization: Bearer {access_token}` on every MCP `POST`. Access tokens last 1 hour; the connector refreshes automatically.
-6. Use MCP tools (`lookup_carrier`, `get_operator_service_types`, `get_operator_rates`, `preview_order`, `create_order`, `get_balance`, …).
+   - See `https://www.doctorsim.com/auth.md` for scopes.
+4. Protected tools (`get_balance`, `list_orders`, `list_webhooks`) return an auth challenge when called without a token.
+
+### Before create_order (model script)
+
+> I can send you a secure payment link to complete this top-up on doctorsim.com — no account needed. If you have a **PRO account with credits** or want **saved account settings**, say "use my doctorSIM account" and I'll connect you.
 
 ### Mobile top-up flow (MCP)
 
@@ -67,14 +74,14 @@ When the user provides a **phone number**:
 3. Ask the user: **airtime, bundles, or data?** If bundle/data, ask what they need (e.g. 5GB, WhatsApp).
 4. **`get_operator_service_types`** — pick the `id_operator` for the chosen type (bundle operators differ from airtime).
 5. **`get_operator_rates`** with `q` to search `description` / `product_name` (e.g. `q="5GB whatsapp"`).
-6. **`preview_order`** — **mandatory** before placement. Show the user the full breakdown (recharge, service fee, SMS, credit applied, amount due). Do not ask "shall I place the order?" until preview is shown.
-7. **`create_order`** — only after `preview_order` **and** explicit user confirmation (e.g. "yes"). Never skip preview.
+6. **`preview_order`** — **mandatory** before placement. Guest: `checkout_mode=payment_link`. OAuth PRO: `checkout_mode=credits`. Show breakdown, then confirm.
+7. **`create_order`** — only after preview **and** explicit confirmation. Guest: returns `payment_link` + `checkout_hash`. PRO OAuth: debits credits and returns `order_id`.
 
 Do **not** use **`search_products`** alone for phone top-ups — it browses the country catalog by brand name. Use **`search_products`** with `operator_id` + `q` only as an alternative rate search API.
 
-`get_operator_rates` totals are indicative; **`preview_order`** is the authoritative checkout breakdown for the authenticated account.
+`get_operator_rates` totals are indicative; **`preview_order`** is the authoritative checkout breakdown.
 
-> The `api_key` path (`Authorization: Bearer {api_id}:{api_secret}`) is for **direct API / server integrations only** — remote MCP connectors must use the OAuth flow above.
+> The `api_key` path is for **direct API / server integrations only** — remote MCP connectors should use guest checkout or optional OAuth.
 
 ### Verify (no auth)
 
@@ -87,7 +94,7 @@ curl -s https://api.doctorsim.com/mcp/health | jq .
 
 ## Credits
 
-Orders debit PRO account credits. Fund credits via the web dashboard (pro-pro checkout). Programmatic credit purchase (x402/ACP) is not yet available.
+PRO orders debit prepaid account credits. Guest and consumer OAuth users pay via `payment_link` on doctorsim.com. Fund PRO credits via the web dashboard.
 
 ## References
 

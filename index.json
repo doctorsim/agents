@@ -8,7 +8,7 @@
       "type": "skill",
       "description": "Browse, fund, and place mobile top-up and gift card orders via doctorSIM API v2 or MCP.",
       "url": "https://www.doctorsim.com/agents/SKILL.md",
-      "sha256": "761082e5110463192222942a8a98d0bf0af5185657a079afd87922d5b66bd399"
+      "sha256": "ce5358fa59d684dfaa3e1c499bac5ca932030b7a90f032d72e389b2c24ac502e"
     }
   ]
 }
