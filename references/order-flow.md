@@ -11,7 +11,8 @@ Both product types use the same order and monitoring endpoints. Discovery differ
 When the user gives a phone number (e.g. `+52 222 123 1231`):
 
 1. **Always run carrier lookup first** — do not ask the user to guess the network if lookup is available.  
-   MCP: `lookup_carrier` · API: `GET https://api.doctorsim.com/v2/carriers/lookup/{phone}`
+   MCP: `lookup_carrier` · API: `GET https://api.doctorsim.com/v2/carriers/lookup/{phone}`  
+   Requires API key or OAuth (anonymous guest is rejected — paid HLR abuse hardening #9877).
 
 2. **If lookup fails**, ask which carrier/network the number uses, or list operators for the country.
 
