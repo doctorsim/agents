@@ -106,7 +106,7 @@ Catalog lives under `/esim/*`; checkout, history, and status use the shared Core
    `POST https://api.doctorsim.com/v2/orders/preview` · MCP: `preview_order` (alias: `preview_esim_order`; REST alias `/esim/orders/preview`)  
    PRO: `checkout_mode=credits`. Guest / consumer OAuth: `payment_link`. Sandbox keys (`test_*`) preview the sandbox catalog.
 
-4. **Place order** — after user confirms. PRO debits credits and returns `order_id`; guest / consumer OAuth return `payment_link` + `checkout_hash`. Sandbox keys on credit checkout provision a real sandbox eSIM. Response carries `type: "esim"`  
+4. **Place order** — after user confirms. PRO debits credits and returns `order_id`; guest / consumer OAuth return `payment_link` + `checkout_hash`. Sandbox keys create a fake eSIM (`sandbox_esim_{id}`, no credit debit). Response carries `type: "esim"`  
    `POST https://api.doctorsim.com/v2/orders` · MCP: `create_order` (alias: `create_esim_order`; REST alias `/esim/orders`)
 
 5. **Monitor** — `GET https://api.doctorsim.com/v2/orders/{id}` or `list_orders?type=esim`  
