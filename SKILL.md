@@ -95,7 +95,7 @@ REST: `GET /giftcards/countries`, `GET /giftcards/brands`, `GET /giftcards/brand
 When the user wants **international data / travel eSIM** (no phone number required):
 
 1. **`get_esim_destinations`** — list countries/regions with plans; pick `country_iso` (ISO-2: `es`, not `ESP`. Regions: `eu`, `ww`, `as`).
-2. **`get_esim_plans`** with `country_iso` — browse plans; copy `catalog_id` and `price_token`. Each plan includes `unlimited` (boolean). Optional `data_type` (`all` / `unlimited` / `limited`) filters the list; omit or `all` returns both.
+2. **`get_esim_plans`** with `country_iso` — browse plans for that destination only. ISO-2 (`es`) is a strict match (does **not** include `eu`/`ww` regional or global plans). Use region slugs (`eu`, `ww`, `as`) for those catalogs. Copy `catalog_id` and `price_token`. Each plan includes `unlimited` (boolean). Optional `data_type` (`all` / `unlimited` / `limited`) filters the list; omit or `all` returns both.
 3. Optional: **`get_esim_plan_detail`** for a single SKU (includes `unlimited`).
 4. **Guest / consumer:** skip preview. Call **`create_order`** with `catalog_id` + `price_token` as soon as the plan is chosen. Returns `payment_link` + `checkout_hash` to `/{locale}/esim/checkout/{hash}` on doctorsim.com (plan preloaded; the buyer types their email there). Poll `get_order_status` with the hash. (`create_esim_order` is an alias.)
 5. **PRO credits:** **`preview_order`** first (mandatory — same body; no credits deducted yet; returns `unlimited` and `data_gb`), confirm, then **`create_order`**. Debits credits and returns `order_id`. Sandbox keys (`test_*`) preview the **sandbox** catalog and create a fake eSIM (`sandbox_esim_{id}`, no credit debit). Response carries `type: "esim"`. (`preview_esim_order` is an alias.)
@@ -142,5 +142,6 @@ PRO orders debit prepaid account credits. Guest and consumer OAuth users pay via
 | API explorer | https://www.doctorsim.com/api-docs/ |
 | MCP server card | https://www.doctorsim.com/.well-known/mcp/server-card.json |
 | MCP endpoint (Streamable HTTP) | https://api.doctorsim.com/mcp |
-| Protected resource | https://api.doctorsim.com/.well-known/oauth-protected-resource/v2 |
+| Protected resource (API v2) | https://api.doctorsim.com/.well-known/oauth-protected-resource/v2 |
+| MCP protected resource | {{MCP_PROTECTED_RESOURCE_URL}} |
 | Agent skills index | https://www.doctorsim.com/.well-known/agent-skills/index.json |
