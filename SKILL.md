@@ -14,14 +14,14 @@ Use this skill when the user wants to recharge a mobile phone, buy a gift card, 
 ## When to use
 
 - User asks to top up / recharge a phone number internationally
-- User wants gift cards (gaming, streaming, retail) — `get_giftcard_brands` → `get_giftcard_brand_products` → `preview_order` / `create_order` (no phone)
+- User wants gift cards (gaming, streaming, retail) — `get_giftcard_brands` → `get_giftcard_brand_products` → `create_order` (guest) or `preview_order` then `create_order` (PRO credits); no phone
 - User wants a travel eSIM plan for international data
 - User needs to check PRO credit balance or order history
 - User wants to integrate doctorSIM into an agent workflow (MCP, API, OAuth)
 
 ## Authentication
 
-**Default (ChatGPT / MCP): guest checkout — no login required.** Browse catalog, preview prices, and get a `payment_link` on doctorsim.com without linking an account.
+**Default (ChatGPT / MCP): guest checkout — no login required.** Browse the catalog and, once the product is chosen, call `create_order` for a `payment_link` on doctorsim.com. Guest preview is optional (no credits at risk).
 
 **Optional OAuth** — link your doctorSIM account when the user wants:
 - PRO prepaid credits (`checkout_mode=credits`)
@@ -75,8 +75,8 @@ When the user provides a **phone number**:
 3. Ask the user: **airtime, bundles, or data?** If bundle/data, ask what they need (e.g. 5GB, WhatsApp).
 4. **`get_operator_service_types`** — pick the `id_operator` for the chosen type (bundle operators differ from airtime).
 5. **`get_operator_rates`** with `q` to search `description` / `product_name` (e.g. `q="5GB whatsapp"`).
-6. **`preview_order`** — **mandatory** before placement. Guest: `checkout_mode=payment_link`. OAuth PRO: `checkout_mode=credits`. Show breakdown, then confirm.
-7. **`create_order`** — only after preview **and** explicit confirmation. Guest: returns `payment_link` + `checkout_hash`. PRO OAuth: debits credits and returns `order_id`.
+6. **Guest / consumer:** skip preview. Call **`create_order`** as soon as the product is chosen (`checkout_mode=payment_link`). Share the `payment_link`.
+7. **PRO credits:** **`preview_order`** first (mandatory — credits will be deducted), show the breakdown, confirm, then **`create_order`**. Returns `order_id`.
 
 Do **not** use **`search_products`** alone for phone top-ups — it browses the whole country catalog by brand name. Use **`search_products`** with `operator_id` + `q` only as an alternative rate search API.
 
@@ -84,11 +84,11 @@ Do **not** use **`search_products`** alone for phone top-ups — it browses the 
 
 1. **`get_giftcard_brands`** with `country` (ISO-2 or id) and optional `q` (brand keyword) — each brand is an `id_operator`.
 2. **`get_giftcard_brand_products`** with `brand_id` — copy the `token`.
-3. **`preview_order`** with `price_token` only (no `phone`), then **`create_order`** after confirmation. Fulfilled orders return `redemption_code` / `redemption_url` on `get_order_status`.
+3. **Guest:** **`create_order`** with `price_token` only (no `phone`) as soon as the denomination is chosen. **PRO:** **`preview_order`** then **`create_order`** after confirmation. Fulfilled orders return `redemption_code` / `redemption_url` on `get_order_status`.
 
 REST: `GET /giftcards/countries`, `GET /giftcards/brands`, `GET /giftcards/brands/{id}/products`, `POST /orders/preview`, `POST /orders`. Top-up REST lives under `/topup/*` (`/topup/carriers/lookup/{phone}`, `/topup/operators/{id}/rates`); the un-prefixed paths remain as aliases.
 
-`get_operator_rates` totals are indicative; **`preview_order`** is the authoritative checkout breakdown.
+`get_operator_rates` totals are indicative. **PRO:** **`preview_order`** is the authoritative debit breakdown. **Guest:** skip preview and create the payment link.
 
 ### Travel eSIM flow (MCP)
 
@@ -97,8 +97,8 @@ When the user wants **international data / travel eSIM** (no phone number requir
 1. **`get_esim_destinations`** — list countries/regions with plans; pick `country_iso` (ISO-2: `es`, not `ESP`. Regions: `eu`, `ww`, `as`).
 2. **`get_esim_plans`** with `country_iso` — browse plans; copy `catalog_id` and `price_token`. Each plan includes `unlimited` (boolean). Optional `data_type` (`all` / `unlimited` / `limited`) filters the list; omit or `all` returns both.
 3. Optional: **`get_esim_plan_detail`** for a single SKU (includes `unlimited`).
-4. **`preview_order`** with `catalog_id` + `price_token` (the eSIM token selects the vertical; `type: "esim"` optional) — mandatory before placement. Same body as create; no credits deducted. Returns `unlimited` and `data_gb` with the price breakdown. Guest / consumer OAuth: `checkout_mode=payment_link`. PRO: `checkout_mode=credits`. Sandbox keys (`test_*`) preview the **sandbox** catalog. (`preview_esim_order` is an alias.)
-5. **`create_order`** — only after preview and explicit confirmation. PRO debits credits and returns `order_id`; guest / consumer OAuth return `payment_link` + `checkout_hash` (share the link; poll `get_order_status` with the hash). Sandbox keys create a fake eSIM (`sandbox_esim_{id}`, no credit debit). Response carries `type: "esim"`. (`create_esim_order` is an alias.)
+4. **Guest / consumer:** skip preview. Call **`create_order`** with `catalog_id` + `price_token` as soon as the plan is chosen. Returns `payment_link` + `checkout_hash` to `/{locale}/esim/checkout/{hash}` on doctorsim.com (plan preloaded; the buyer types their email there). Poll `get_order_status` with the hash. (`create_esim_order` is an alias.)
+5. **PRO credits:** **`preview_order`** first (mandatory — same body; no credits deducted yet; returns `unlimited` and `data_gb`), confirm, then **`create_order`**. Debits credits and returns `order_id`. Sandbox keys (`test_*`) preview the **sandbox** catalog and create a fake eSIM (`sandbox_esim_{id}`, no credit debit). Response carries `type: "esim"`. (`preview_esim_order` is an alias.)
 6. Monitor with **`get_order_status`** or **`list_orders`** (`type=esim`). Fulfilled eSIM includes `iccid`, `lpa_string`, Apple `install_url`, and a hosted PNG `qr_code_url`. Single-order status also includes remaining `balance_amount` (provider refresh if last check is older than five minutes). List rows set `balance_amount` to `per order basis`. Use `iccid` with **`get_esim_line`**.
 7. Optional: **`get_esim_line`** with the ICCID (OAuth `orders:read`) for remaining data. The line is the same on every device. The API refreshes from the provider only when the last check is older than five minutes.
 

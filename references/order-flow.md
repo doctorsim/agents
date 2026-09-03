@@ -24,13 +24,11 @@ When the user gives a phone number (e.g. `+52 222 123 1231`):
 5. **Fetch and filter rates** for the chosen service type. Search bundle/data descriptions with `q` (e.g. `q=5GB whatsapp`).  
    MCP: `get_operator_rates` · API: `GET https://api.doctorsim.com/v2/topup/operators/{child_id}/rates?q=…`
 
-6. **Preview the exact cost** — mandatory before placement; show the user the full breakdown (recharge, service fee, SMS if any, credit applied, amount due).  
-   MCP: `preview_order` · API: `POST https://api.doctorsim.com/v2/orders/preview`
-
-7. **Ask for confirmation** after showing the preview breakdown.
-
-8. **Place order** as soon as the user confirms (e.g. replies "yes") — reuse the same fields and `price_token` from the preview. You do **not** need to run a fresh preview in the same turn.  
+6. **Guest / consumer:** skip preview. Call `create_order` as soon as the product is chosen.  
    MCP: `create_order` · API: `POST https://api.doctorsim.com/v2/orders`
+
+7. **PRO credits:** preview the exact cost (mandatory — credits will be deducted), show the breakdown, then place the order after confirmation.  
+   MCP: `preview_order` then `create_order` · API: `POST https://api.doctorsim.com/v2/orders/preview` then `POST https://api.doctorsim.com/v2/orders`
 
 ### API steps
 
@@ -41,11 +39,7 @@ When the user gives a phone number (e.g. `+52 222 123 1231`):
    `GET https://api.doctorsim.com/v2/topup/operators/{id}/service-types`  
    `GET https://api.doctorsim.com/v2/topup/operators/{id}/rates?q=5GB+whatsapp`
 
-3. **Preview order** — mandatory; present full price breakdown to the user  
-   `POST https://api.doctorsim.com/v2/orders/preview`
-
-4. **Place order** — as soon as the user confirms (e.g. "yes") after the preview; reuse the same `token`. No need to re-preview in the same turn.  
-   `POST https://api.doctorsim.com/v2/orders`
+3. **Guest:** place the order immediately (`POST https://api.doctorsim.com/v2/orders`). **PRO:** preview first (`POST https://api.doctorsim.com/v2/orders/preview`), then place the order.
 
 5. **Monitor** — poll order status or register a webhook (see [Webhooks](https://www.doctorsim.com/agents/references/webhooks.md))  
    `GET https://api.doctorsim.com/v2/orders/{id}`
@@ -73,8 +67,8 @@ Optional: `operator_id` / `country_id` as cross-checks when using `price_token`.
    `GET https://api.doctorsim.com/v2/giftcards/brands?country={iso_or_id}` · MCP: `get_giftcard_brands` (default 50/page; when `meta.has_more` is true, pass `cursor=meta.cursor`)  
    `GET https://api.doctorsim.com/v2/giftcards/brands/{id}/products` · MCP: `get_giftcard_brand_products`
 
-3. **Preview, then place order** — send `price_token` only (no `phone`)  
-   `POST https://api.doctorsim.com/v2/orders/preview` then `POST https://api.doctorsim.com/v2/orders` · MCP: `preview_order` / `create_order`
+3. **Guest:** `POST https://api.doctorsim.com/v2/orders` with `price_token` only (no `phone`). **PRO:** preview, then place.  
+   MCP: `create_order` (guest) or `preview_order` / `create_order` (PRO)
 
 4. **Monitor** — same as top-up  
    `GET https://api.doctorsim.com/v2/orders/{id}`
@@ -102,12 +96,11 @@ Catalog lives under `/esim/*`; checkout, history, and status use the shared Core
 2. **List plans** — pick `catalog_id` and `price_token`. `country_iso` is ISO-2 (`es`) or a region slug (`eu`, `ww`, `as`). Each plan includes `unlimited` (boolean). Optional `data_type=unlimited` or `limited`  
    `GET https://api.doctorsim.com/v2/esim/products?country_iso=es` · MCP: `get_esim_plans`
 
-3. **Preview** — mandatory; same body as create. Send `catalog_id` + `price_token` (the eSIM token selects the vertical; `type: "esim"` is optional)  
-   `POST https://api.doctorsim.com/v2/orders/preview` · MCP: `preview_order` (alias: `preview_esim_order`; REST alias `/esim/orders/preview`)  
-   PRO: `checkout_mode=credits`. Guest / consumer OAuth: `payment_link`. Sandbox keys (`test_*`) preview the sandbox catalog.
-
-4. **Place order** — after user confirms. PRO debits credits and returns `order_id`; guest / consumer OAuth return `payment_link` + `checkout_hash`. Sandbox keys create a fake eSIM (`sandbox_esim_{id}`, no credit debit). Response carries `type: "esim"`  
+3. **Guest / consumer:** skip preview. Place the order as soon as the plan is chosen. Returns `payment_link` + `checkout_hash` to `/{locale}/esim/checkout/{hash}` on doctorsim.com (plan preloaded; buyer types email there).  
    `POST https://api.doctorsim.com/v2/orders` · MCP: `create_order` (alias: `create_esim_order`; REST alias `/esim/orders`)
+
+4. **PRO credits:** preview first (mandatory), then place. Debits credits and returns `order_id`. Sandbox keys (`test_*`) preview the sandbox catalog and create a fake eSIM (`sandbox_esim_{id}`, no credit debit). Response carries `type: "esim"`  
+   `POST https://api.doctorsim.com/v2/orders/preview` then `POST https://api.doctorsim.com/v2/orders` · MCP: `preview_order` / `create_order`
 
 5. **Monitor** — `GET https://api.doctorsim.com/v2/orders/{id}` or `list_orders?type=esim`  
    Fulfilled eSIM includes `iccid`, `lpa_string`, Apple `install_url`, and a hosted PNG `qr_code_url`. Single-order status also returns remaining `balance_amount` (provider refresh if last check is older than five minutes). List rows set `balance_amount` to `per order basis`.

@@ -30,7 +30,7 @@ Public consumer documentation: [MCP Server guide](/api-docs/mcp.html)
 | `preview_esim_order` | Alias of `preview_order` with `type=esim` (kept for existing connectors) |
 | `create_esim_order` | Alias of `create_order` with `type=esim` (kept for existing connectors) |
 | `get_esim_line` | Remaining data for a titular-owned ICCID (OAuth) |
-| `preview_order` | **Required** price breakdown before checkout — every vertical (top-up, gift card, travel eSIM) |
+| `preview_order` | Price breakdown without placing an order. **Required for PRO credits.** Optional for guest / consumer `payment_link`. |
 | `create_order` | Place order for any vertical (PRO credits, or guest / consumer payment link) |
 | `get_order_status` | Single order status |
 | `list_orders` | Order history |
@@ -65,15 +65,15 @@ The user must open `payment_link` and pay on doctorSIM. Poll with `checkout_hash
 
 1. `lookup_carrier` (top-ups) or `get_giftcard_brands` (gift cards)
 2. `get_operator_rates` (top-ups) or `get_giftcard_brand_products` (gift cards) → copy `token`
-3. `preview_order` → show breakdown, ask for confirmation
-4. `create_order` → call as soon as the user confirms (e.g. "yes"); reuse the same `price_token`, no need to re-preview
+3. Guest: `create_order` as soon as the product is chosen (preview optional). PRO: `preview_order` → show breakdown → `create_order` after confirmation
+4. Guest / consumer: share `payment_link`. PRO: `order_id` after credit debit
 5. Monitor via `get_order_status` / `list_orders`
 
 ### Travel eSIM
 
 1. `get_esim_destinations` → pick `country_iso`
 2. `get_esim_plans` → copy `catalog_id` and `price_token`
-3. `preview_order` with `catalog_id` + `price_token` (eSIM token selects the vertical) → show breakdown, ask for confirmation
-4. `create_order` → PRO credits (`order_id`) or guest / consumer `payment_link`; response carries `type: "esim"`
+3. Guest: `create_order` with `catalog_id` + `price_token` as soon as the plan is chosen (preview optional) → `payment_link` to `/{locale}/esim/checkout/{hash}`
+4. PRO: `preview_order` then `create_order` → credits debit + `order_id`; response carries `type: "esim"`
 5. Monitor via `get_order_status` / `list_orders` (`type=esim`)
 6. Optional: `get_esim_line` with ICCID for remaining data (OAuth)

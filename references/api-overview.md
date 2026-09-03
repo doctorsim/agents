@@ -44,7 +44,7 @@ See OpenAPI for full schema: `https://www.doctorsim.com/api-docs/openapi.yaml`
 
 ## Pricing and orders
 
-All three products **preview then create** on the same Core endpoints (`POST /orders/preview`, then `POST /orders`). The **catalog** and the **JSON body** decide the vertical. Always preview, show the breakdown, then create with the same body.
+All three products share the same Core endpoints (`POST /orders/preview`, `POST /orders`). The **catalog** and the **JSON body** decide the vertical. **PRO credits:** always preview, show the breakdown, then create. **Guest / consumer `payment_link`:** skip preview and create as soon as the product is chosen.
 
 | | Top-up | Gift cards | Travel eSIM |
 |---|---|---|---|
@@ -58,13 +58,13 @@ All three products **preview then create** on the same Core endpoints (`POST /or
 
 1. Identify the line: `GET /topup/carriers/lookup/{phone}` (or list operators for a country).
 2. `GET /topup/operators/{id}/rates` — copy `token` from the `rates` array.
-3. `POST /orders/preview` then `POST /orders` with `"price_token": "<token>"` and `"phone": "+34…"`.
+3. Guest: `POST /orders` with `"price_token": "<token>"` and `"phone": "+34…"`. PRO: preview first, then the same create body.
 
 ### Gift cards
 
 1. `GET /giftcards/brands?country={iso}` then `GET /giftcards/brands/{id}/products`.
 2. Copy `token` from the `rates` array.
-3. `POST /orders/preview` then `POST /orders` with `"price_token": "<token>"` only.
+3. Guest: `POST /orders` with `"price_token": "<token>"` only. PRO: preview first, then create.
 
 ### Travel eSIM (not a top-up)
 
@@ -72,12 +72,12 @@ eSIM is a **plan SKU**, not an operator rate. There is no phone number and no `/
 
 1. `GET /esim/destinations` — pick `country_iso` (ISO-2 such as `es`, or region `eu` / `ww` / `as`).
 2. `GET /esim/products?country_iso=es` — pick a plan. Copy **both** `catalog_id` and `price_token` from that row (the eSIM token is not a top-up rate `token`).
-3. `POST /orders/preview` with the same body you will create:
+3. Guest: `POST /orders` as soon as the plan is chosen:
    ```json
    { "catalog_id": 42, "price_token": "<esim price_token>", "lang": "en" }
    ```
-   Preview returns `checkout_mode`: `credits` (PRO) or `payment_link` (guest / consumer OAuth).
-4. `POST /orders` with that same body. PRO returns `order_id` immediately. Guest / consumer OAuth return `payment_link` + `checkout_hash` — the user pays on doctorsim.com, then poll `GET /orders/{id}?checkout_hash=<hash>` until `order_id` appears.
+   Returns `payment_link` + `checkout_hash` to `/{locale}/esim/checkout/{hash}` on doctorsim.com (plan preloaded; buyer types email there). Poll `GET /orders?checkout_hash=<hash>` until `order_id` appears. Preview is optional for guests.
+4. PRO: `POST /orders/preview` with that same body (`checkout_mode=credits`), then `POST /orders`. Returns `order_id` immediately.
 5. Fulfilled eSIM: `GET /orders/{id}` (or `GET /orders?type=esim`) for `iccid`, `lpa_string`, `qr_code_url`, `install_url`. Remaining data: `GET /esim/lines/{iccid}`.
 
 `POST /esim/orders/preview` and `POST /esim/orders` are aliases of the Core `/orders*` calls (same body).
