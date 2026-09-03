@@ -4,7 +4,7 @@ Public consumer documentation: [MCP Server guide](/api-docs/mcp.html)
 
 ## Endpoint
 
-- **Streamable HTTP:** `https://api.doctorsim.com/mcp` (or your environment's MCP URL from the server card)
+- **Streamable HTTP:** `https://api.doctorsim.com/mcp` (Cloudflare Worker — same URL on mydev3; the website does not serve `/mcp`)
 - **Server card:** `/.well-known/mcp/server-card.json`
 
 ## Authentication
@@ -21,9 +21,17 @@ Public consumer documentation: [MCP Server guide](/api-docs/mcp.html)
 | `get_operators` | Operators for a country |
 | `get_operator_service_types` | Airtime / data / bundle types |
 | `get_operator_rates` | Live pricing + `token` for orders |
-| `search_products` | Catalog search |
-| `preview_order` | **Required** price breakdown before checkout |
-| `create_order` | Place order (credits or payment link) |
+| `search_products` | Unfiltered catalog search (top-up operators + gift card brands) |
+| `get_giftcard_brands` | Gift card brands for a country (`/giftcards/brands`) |
+| `get_giftcard_brand_products` | Gift card denominations + `token` (`/giftcards/brands/{id}/products`) |
+| `get_esim_destinations` | eSIM destination list |
+| `get_esim_plans` | eSIM plans for a country |
+| `get_esim_plan_detail` | Single eSIM plan detail |
+| `preview_esim_order` | Alias of `preview_order` with `type=esim` (kept for existing connectors) |
+| `create_esim_order` | Alias of `create_order` with `type=esim` (kept for existing connectors) |
+| `get_esim_line` | Remaining data for a titular-owned ICCID (OAuth) |
+| `preview_order` | **Required** price breakdown before checkout — every vertical (top-up, gift card, travel eSIM) |
+| `create_order` | Place order for any vertical (PRO credits, or guest / consumer payment link) |
 | `get_order_status` | Single order status |
 | `list_orders` | Order history |
 | `get_balance` | PRO prepaid credits |
@@ -53,8 +61,19 @@ The user must open `payment_link` and pay on doctorSIM. Poll with `checkout_hash
 
 ## Purchase flow
 
-1. `lookup_carrier` (top-ups) or `search_products` (gift cards)
-2. `get_operator_rates` → copy `token`
+### Mobile top-up / gift card
+
+1. `lookup_carrier` (top-ups) or `get_giftcard_brands` (gift cards)
+2. `get_operator_rates` (top-ups) or `get_giftcard_brand_products` (gift cards) → copy `token`
 3. `preview_order` → show breakdown, ask for confirmation
 4. `create_order` → call as soon as the user confirms (e.g. "yes"); reuse the same `price_token`, no need to re-preview
 5. Monitor via `get_order_status` / `list_orders`
+
+### Travel eSIM
+
+1. `get_esim_destinations` → pick `country_iso`
+2. `get_esim_plans` → copy `catalog_id` and `price_token`
+3. `preview_order` with `catalog_id` + `price_token` (eSIM token selects the vertical) → show breakdown, ask for confirmation
+4. `create_order` → PRO credits (`order_id`) or guest / consumer `payment_link`; response carries `type: "esim"`
+5. Monitor via `get_order_status` / `list_orders` (`type=esim`)
+6. Optional: `get_esim_line` with ICCID for remaining data (OAuth)

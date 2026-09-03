@@ -17,14 +17,23 @@ Or OAuth JWT from `POST https://www.doctorsim.com/oauth/token`.
 | Method | Path | Scope |
 |---|---|---|
 | GET | /status | public |
-| GET | /countries | read |
-| GET | /operators | read |
-| GET | /operators/{id}/service-types | read |
-| GET | /operators/{id}/rates | read |
-| GET | /products/search | read |
-| GET | /products/{operator_id} | read |
-| GET | /carriers/lookup/{phone} | read |
-| POST | /orders | write |
+| GET | /topup/carriers/lookup/{phone} | read |
+| GET | /topup/countries | read |
+| GET | /topup/operators | read |
+| GET | /topup/operators/{id}/service-types | read |
+| GET | /topup/operators/{id}/rates | read |
+| GET | /topup/products/search | read |
+| GET | /topup/products/{operator_id} | read |
+| GET | /giftcards/countries | read |
+| GET | /giftcards/brands | read |
+| GET | /giftcards/brands/{id}/products | read |
+| GET | /giftcards/products/{operator_id} | read |
+| GET | /esim/destinations | read |
+| GET | /esim/products | read |
+| GET | /esim/products/{catalog_id} | read |
+| GET | /esim/lines/{iccid} | read |
+| POST | /orders/preview | read (every vertical; `/esim/orders/preview` is an alias) |
+| POST | /orders | write (every vertical; `/esim/orders` is an alias) |
 | GET | /orders | read |
 | GET | /orders/{id} | read |
 | GET | /balance | read |
@@ -35,13 +44,47 @@ See OpenAPI for full schema: `https://www.doctorsim.com/api-docs/openapi.yaml`
 
 ## Pricing and orders
 
-1. Fetch rates from `GET /operators/{id}/rates` or `GET /products/{operator_id}`.
-2. Copy the rate `token` from the `rates` array.
-3. Place the order with `POST /orders` and `"price_token": "<token>"`.
+All three products **preview then create** on the same Core endpoints (`POST /orders/preview`, then `POST /orders`). The **catalog** and the **JSON body** decide the vertical. Always preview, show the breakdown, then create with the same body.
 
-For mobile top-ups, include `phone` (E.164). Gift cards may omit `phone` when the product does not require it.
+| | Top-up | Gift cards | Travel eSIM |
+|---|---|---|---|
+| Catalog | `/topup/*` (aliases: `/countries`, `/operators/*`, `/products/*`, `/carriers/*`) | `/giftcards/*` | `/esim/*` only — do **not** use `/countries` or `/operators` |
+| How you pick a product | Phone → carrier → `GET /topup/operators/{id}/rates` → copy rate `token` | Country → brand → `GET /giftcards/brands/{id}/products` → copy rate `token` | Destination → `GET /esim/products` → copy `catalog_id` **and** eSIM `price_token` |
+| Create body | `price_token` + `phone` (E.164) | `price_token` only (no phone) | `catalog_id` + eSIM `price_token` (no phone). `type: "esim"` is optional — the token already selects the vertical |
+| What create returns | PRO: `order_id`. Guest / consumer OAuth: `payment_link` + `checkout_hash` | Same | Same |
+| After payment | Airtime / bundle on the phone | Redemption code or URL | ICCID, LPA, QR, Apple `install_url`. Titular gets the confirmation email |
 
-Legacy checkout with separate `tool_id`, `denomination_id`, `amount`, `operator_id`, and `country_id` is still accepted but deprecated.
+### Top-up
+
+1. Identify the line: `GET /topup/carriers/lookup/{phone}` (or list operators for a country).
+2. `GET /topup/operators/{id}/rates` — copy `token` from the `rates` array.
+3. `POST /orders/preview` then `POST /orders` with `"price_token": "<token>"` and `"phone": "+34…"`.
+
+### Gift cards
+
+1. `GET /giftcards/brands?country={iso}` then `GET /giftcards/brands/{id}/products`.
+2. Copy `token` from the `rates` array.
+3. `POST /orders/preview` then `POST /orders` with `"price_token": "<token>"` only.
+
+### Travel eSIM (not a top-up)
+
+eSIM is a **plan SKU**, not an operator rate. There is no phone number and no `/topup/operators/{id}/rates` step.
+
+1. `GET /esim/destinations` — pick `country_iso` (ISO-2 such as `es`, or region `eu` / `ww` / `as`).
+2. `GET /esim/products?country_iso=es` — pick a plan. Copy **both** `catalog_id` and `price_token` from that row (the eSIM token is not a top-up rate `token`).
+3. `POST /orders/preview` with the same body you will create:
+   ```json
+   { "catalog_id": 42, "price_token": "<esim price_token>", "lang": "en" }
+   ```
+   Preview returns `checkout_mode`: `credits` (PRO) or `payment_link` (guest / consumer OAuth).
+4. `POST /orders` with that same body. PRO returns `order_id` immediately. Guest / consumer OAuth return `payment_link` + `checkout_hash` — the user pays on doctorsim.com, then poll `GET /orders/{id}?checkout_hash=<hash>` until `order_id` appears.
+5. Fulfilled eSIM: `GET /orders/{id}` (or `GET /orders?type=esim`) for `iccid`, `lpa_string`, `qr_code_url`, `install_url`. Remaining data: `GET /esim/lines/{iccid}`.
+
+`POST /esim/orders/preview` and `POST /esim/orders` are aliases of the Core `/orders*` calls (same body).
+
+Full conversation scripts: [order-flow.md](https://www.doctorsim.com/agents/references/order-flow.md).
+
+Legacy checkout with separate `tool_id`, `denomination_id`, `amount`, `operator_id`, and `country_id` is still accepted for top-up / gift cards but deprecated. Do not use that shape for eSIM.
 
 ## Environments
 

@@ -1,6 +1,6 @@
 # Order placement flow
 
-Both product types use the same order and monitoring endpoints. Discovery differs between mobile top-up and gift cards.
+Every vertical uses the same Core order and monitoring endpoints (`/orders*`, `/balance`, `/webhooks`). Only the catalog differs, and each vertical has its own prefix: `/topup/*`, `/giftcards/*`, `/esim/*`. Un-prefixed catalog paths (`/countries`, `/operators/*`, `/products/*`, `/carriers/*`) remain as aliases.
 
 **Base URL:** `https://api.doctorsim.com/v2`
 
@@ -11,7 +11,7 @@ Both product types use the same order and monitoring endpoints. Discovery differ
 When the user gives a phone number (e.g. `+52 222 123 1231`):
 
 1. **Always run carrier lookup first** — do not ask the user to guess the network if lookup is available.  
-   MCP: `lookup_carrier` · API: `GET https://api.doctorsim.com/v2/carriers/lookup/{phone}`  
+   MCP: `lookup_carrier` · API: `GET https://api.doctorsim.com/v2/topup/carriers/lookup/{phone}`  
    Requires API key or OAuth (anonymous guest is rejected — paid HLR abuse hardening #9877).
 
 2. **If lookup fails**, ask which carrier/network the number uses, or list operators for the country.
@@ -19,10 +19,10 @@ When the user gives a phone number (e.g. `+52 222 123 1231`):
 3. **Ask what they want to buy** — e.g. *"Do you want airtime (saldo), a bundle/package, or mobile data? If bundle or data, what are you looking for (e.g. 5GB, WhatsApp)?"*
 
 4. **List service types** for the identified operator — each type (airtime vs bundle vs data) has its own `id_operator`.  
-   MCP: `get_operator_service_types` · API: `GET https://api.doctorsim.com/v2/operators/{id}/service-types`
+   MCP: `get_operator_service_types` · API: `GET https://api.doctorsim.com/v2/topup/operators/{id}/service-types`
 
 5. **Fetch and filter rates** for the chosen service type. Search bundle/data descriptions with `q` (e.g. `q=5GB whatsapp`).  
-   MCP: `get_operator_rates` · API: `GET https://api.doctorsim.com/v2/operators/{child_id}/rates?q=…`
+   MCP: `get_operator_rates` · API: `GET https://api.doctorsim.com/v2/topup/operators/{child_id}/rates?q=…`
 
 6. **Preview the exact cost** — mandatory before placement; show the user the full breakdown (recharge, service fee, SMS if any, credit applied, amount due).  
    MCP: `preview_order` · API: `POST https://api.doctorsim.com/v2/orders/preview`
@@ -35,11 +35,11 @@ When the user gives a phone number (e.g. `+52 222 123 1231`):
 ### API steps
 
 1. **Lookup phone number** — identify carrier and country from E.164 MSISDN  
-   `GET https://api.doctorsim.com/v2/carriers/lookup/{phone}`
+   `GET https://api.doctorsim.com/v2/topup/carriers/lookup/{phone}`
 
 2. **Select airtime, data, or bundle** — list service types, then pick a rate `token` (use `q` on rates for bundle/data search)  
-   `GET https://api.doctorsim.com/v2/operators/{id}/service-types`  
-   `GET https://api.doctorsim.com/v2/operators/{id}/rates?q=5GB+whatsapp`
+   `GET https://api.doctorsim.com/v2/topup/operators/{id}/service-types`  
+   `GET https://api.doctorsim.com/v2/topup/operators/{id}/rates?q=5GB+whatsapp`
 
 3. **Preview order** — mandatory; present full price breakdown to the user  
    `POST https://api.doctorsim.com/v2/orders/preview`
@@ -66,15 +66,15 @@ Optional: `operator_id` / `country_id` as cross-checks when using `price_token`.
 
 ## Gift cards
 
-1. **Select country** — browse supported destinations  
-   `GET https://api.doctorsim.com/v2/countries`
+1. **Select country** — countries with gift card brands  
+   `GET https://api.doctorsim.com/v2/giftcards/countries`
 
-2. **Search catalog** — find brand/product, then load rates and copy the `token`  
-   `GET https://api.doctorsim.com/v2/products/search?country={iso_or_id}` (default 50/page; when `meta.has_more` is true, pass `cursor=meta.cursor`)  
-   `GET https://api.doctorsim.com/v2/operators/{id}/rates`
+2. **Search brands** — find the brand (an `id_operator`), then load denominations and copy the `token`  
+   `GET https://api.doctorsim.com/v2/giftcards/brands?country={iso_or_id}` · MCP: `get_giftcard_brands` (default 50/page; when `meta.has_more` is true, pass `cursor=meta.cursor`)  
+   `GET https://api.doctorsim.com/v2/giftcards/brands/{id}/products` · MCP: `get_giftcard_brand_products`
 
-3. **Place order** — send `price_token` (some products do not require `phone`)  
-   `POST https://api.doctorsim.com/v2/orders`
+3. **Preview, then place order** — send `price_token` only (no `phone`)  
+   `POST https://api.doctorsim.com/v2/orders/preview` then `POST https://api.doctorsim.com/v2/orders` · MCP: `preview_order` / `create_order`
 
 4. **Monitor** — same as top-up  
    `GET https://api.doctorsim.com/v2/orders/{id}`
@@ -89,6 +89,42 @@ Optional: `operator_id` / `country_id` as cross-checks when using `price_token`.
 ```
 
 Add `phone` or email fields only when the selected product requires them.
+
+---
+
+## Travel eSIM
+
+Catalog lives under `/esim/*`; checkout, history, and status use the shared Core `/orders` spine (the body selects the vertical). MCP mirrors this: `get_esim_*` for the catalog, `preview_order` / `create_order` for checkout (`preview_esim_order` / `create_esim_order` remain as aliases).
+
+1. **Browse destinations** — list countries/regions with plans  
+   `GET https://api.doctorsim.com/v2/esim/destinations` · MCP: `get_esim_destinations`
+
+2. **List plans** — pick `catalog_id` and `price_token`. `country_iso` is ISO-2 (`es`) or a region slug (`eu`, `ww`, `as`). Each plan includes `unlimited` (boolean). Optional `data_type=unlimited` or `limited`  
+   `GET https://api.doctorsim.com/v2/esim/products?country_iso=es` · MCP: `get_esim_plans`
+
+3. **Preview** — mandatory; same body as create. Send `catalog_id` + `price_token` (the eSIM token selects the vertical; `type: "esim"` is optional)  
+   `POST https://api.doctorsim.com/v2/orders/preview` · MCP: `preview_order` (alias: `preview_esim_order`; REST alias `/esim/orders/preview`)  
+   PRO: `checkout_mode=credits`. Guest / consumer OAuth: `payment_link`. Sandbox keys (`test_*`) preview the sandbox catalog.
+
+4. **Place order** — after user confirms. PRO debits credits and returns `order_id`; guest / consumer OAuth return `payment_link` + `checkout_hash`. Sandbox keys on credit checkout provision a real sandbox eSIM. Response carries `type: "esim"`  
+   `POST https://api.doctorsim.com/v2/orders` · MCP: `create_order` (alias: `create_esim_order`; REST alias `/esim/orders`)
+
+5. **Monitor** — `GET https://api.doctorsim.com/v2/orders/{id}` or `list_orders?type=esim`  
+   Fulfilled eSIM includes `iccid`, `lpa_string`, Apple `install_url`, and a hosted PNG `qr_code_url`. Single-order status also returns remaining `balance_amount` (provider refresh if last check is older than five minutes). List rows set `balance_amount` to `per order basis`.
+
+6. **Line remaining data** — `GET https://api.doctorsim.com/v2/esim/lines/{iccid}` · MCP: `get_esim_line`  
+   Requires OAuth/API key (`orders:read`). The ICCID line is the same on every device. Provider refresh only when last check is older than five minutes.
+
+### eSIM order body (typical)
+
+```json
+{
+  "catalog_id": 42,
+  "price_token": "esim__42__9.99__EUR__0__1710000000__a1b2c3d4e5f6g7h8",
+  "lang": "en",
+  "currency": "EUR"
+}
+```
 
 ---
 

@@ -1,6 +1,6 @@
 ---
 name: doctorsim
-description: Place mobile top-up and gift card orders on doctorSIM via API v2 or MCP. Browse products, check balance, manage webhooks.
+description: Place mobile top-up, gift card, and travel eSIM orders on doctorSIM via API v2 or MCP. Browse products, check balance, manage webhooks.
 metadata:
   author: doctorSIM
   version: "1.0.0"
@@ -14,7 +14,8 @@ Use this skill when the user wants to recharge a mobile phone, buy a gift card, 
 ## When to use
 
 - User asks to top up / recharge a phone number internationally
-- User wants gift cards (gaming, streaming, retail)
+- User wants gift cards (gaming, streaming, retail) — `get_giftcard_brands` → `get_giftcard_brand_products` → `preview_order` / `create_order` (no phone)
+- User wants a travel eSIM plan for international data
 - User needs to check PRO credit balance or order history
 - User wants to integrate doctorSIM into an agent workflow (MCP, API, OAuth)
 
@@ -77,13 +78,39 @@ When the user provides a **phone number**:
 6. **`preview_order`** — **mandatory** before placement. Guest: `checkout_mode=payment_link`. OAuth PRO: `checkout_mode=credits`. Show breakdown, then confirm.
 7. **`create_order`** — only after preview **and** explicit confirmation. Guest: returns `payment_link` + `checkout_hash`. PRO OAuth: debits credits and returns `order_id`.
 
-Do **not** use **`search_products`** alone for phone top-ups — it browses the country catalog by brand name. Use **`search_products`** with `operator_id` + `q` only as an alternative rate search API.
+Do **not** use **`search_products`** alone for phone top-ups — it browses the whole country catalog by brand name. Use **`search_products`** with `operator_id` + `q` only as an alternative rate search API.
+
+### Gift card flow (MCP)
+
+1. **`get_giftcard_brands`** with `country` (ISO-2 or id) and optional `q` (brand keyword) — each brand is an `id_operator`.
+2. **`get_giftcard_brand_products`** with `brand_id` — copy the `token`.
+3. **`preview_order`** with `price_token` only (no `phone`), then **`create_order`** after confirmation. Fulfilled orders return `redemption_code` / `redemption_url` on `get_order_status`.
+
+REST: `GET /giftcards/countries`, `GET /giftcards/brands`, `GET /giftcards/brands/{id}/products`, `POST /orders/preview`, `POST /orders`. Top-up REST lives under `/topup/*` (`/topup/carriers/lookup/{phone}`, `/topup/operators/{id}/rates`); the un-prefixed paths remain as aliases.
 
 `get_operator_rates` totals are indicative; **`preview_order`** is the authoritative checkout breakdown.
 
-> The `api_key` path is for **direct API / server integrations only** — remote MCP connectors should use guest checkout or optional OAuth.
+### Travel eSIM flow (MCP)
 
-### Verify (no auth)
+When the user wants **international data / travel eSIM** (no phone number required):
+
+1. **`get_esim_destinations`** — list countries/regions with plans; pick `country_iso` (ISO-2: `es`, not `ESP`. Regions: `eu`, `ww`, `as`).
+2. **`get_esim_plans`** with `country_iso` — browse plans; copy `catalog_id` and `price_token`. Each plan includes `unlimited` (boolean). Optional `data_type` (`all` / `unlimited` / `limited`) filters the list; omit or `all` returns both.
+3. Optional: **`get_esim_plan_detail`** for a single SKU (includes `unlimited`).
+4. **`preview_order`** with `catalog_id` + `price_token` (the eSIM token selects the vertical; `type: "esim"` optional) — mandatory before placement. Same body as create; no credits deducted. Returns `unlimited` and `data_gb` with the price breakdown. Guest / consumer OAuth: `checkout_mode=payment_link`. PRO: `checkout_mode=credits`. Sandbox keys (`test_*`) preview the **sandbox** catalog. (`preview_esim_order` is an alias.)
+5. **`create_order`** — only after preview and explicit confirmation. PRO debits credits and returns `order_id`; guest / consumer OAuth return `payment_link` + `checkout_hash` (share the link; poll `get_order_status` with the hash). Sandbox keys on credit checkout provision a real sandbox eSIM. Response carries `type: "esim"`. (`create_esim_order` is an alias.)
+6. Monitor with **`get_order_status`** or **`list_orders`** (`type=esim`). Fulfilled eSIM includes `iccid`, `lpa_string`, Apple `install_url`, and a hosted PNG `qr_code_url`. Single-order status also includes remaining `balance_amount` (provider refresh if last check is older than five minutes). List rows set `balance_amount` to `per order basis`. Use `iccid` with **`get_esim_line`**.
+7. Optional: **`get_esim_line`** with the ICCID (OAuth `orders:read`) for remaining data. The line is the same on every device. The API refreshes from the provider only when the last check is older than five minutes.
+
+REST equivalents: `GET /esim/destinations`, `GET /esim/products`, `POST /orders/preview`, `POST /orders`, `GET /esim/lines/{iccid}` (`/esim/orders/preview` and `/esim/orders` are aliases).
+
+> Travel eSIM checkout uses the same modes as top-up / gift cards: PRO credits, or a `payment_link` for guest / consumer OAuth.
+
+### Verify MCP Worker (no auth)
+
+These hit the **Cloudflare MCP Worker** (`https://api.doctorsim.com/mcp`), not the website.
+`GET /mcp` returns the server descriptor (protocol + tools). `GET /mcp/health` is a liveness check.
+Neither requires a Bearer token.
 
 ```bash
 curl -s https://api.doctorsim.com/mcp | jq .
