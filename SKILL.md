@@ -1,21 +1,21 @@
 ---
 name: doctorsim
-description: Place mobile top-up, gift card, and travel eSIM orders on doctorSIM via API v2 or MCP. Browse products, check balance, manage webhooks.
+description: Place mobile top-up, travel eSIM, and gift card orders on doctorSIM via API v2 or MCP. Browse products, check balance, manage webhooks.
 metadata:
   author: doctorSIM
-  version: "1.0.0"
+  version: "1.1.0"
   homepage: https://www.doctorsim.com/api-docs/
 ---
 
 # doctorSIM Agent Skill
 
-Use this skill when the user wants to recharge a mobile phone, buy a gift card, or automate doctorSIM PRO orders programmatically.
+Use this skill when the user wants to recharge a mobile phone, buy a travel eSIM, buy a gift card, or automate doctorSIM PRO orders programmatically.
 
 ## When to use
 
 - User asks to top up / recharge a phone number internationally
+- User wants a travel eSIM plan for international data — `get_esim_destinations` → `get_esim_plans` → `create_order` (guest) or `preview_order` then `create_order` (PRO credits); no phone
 - User wants gift cards (gaming, streaming, retail) — `get_giftcard_brands` → `get_giftcard_brand_products` → `create_order` (guest) or `preview_order` then `create_order` (PRO credits); no phone
-- User wants a travel eSIM plan for international data
 - User needs to check PRO credit balance or order history
 - User wants to integrate doctorSIM into an agent workflow (MCP, API, OAuth)
 
@@ -64,7 +64,7 @@ Remote connectors use **Streamable HTTP only**. The MCP endpoint runs on Cloudfl
 
 ### Before create_order (model script)
 
-> I can send you a secure payment link to complete this top-up on doctorsim.com — no account needed. If you have a **PRO account with credits** or want **saved account settings**, say "use my doctorSIM account" and I'll connect you.
+> I can send you a secure payment link to complete this top-up, travel eSIM, or gift card on doctorsim.com — no account needed. If you have a **PRO account with credits** or want **saved account settings**, say "use my doctorSIM account" and I'll connect you.
 
 ### Mobile top-up flow (MCP)
 
@@ -80,16 +80,6 @@ When the user provides a **phone number**:
 
 Do **not** use **`search_products`** alone for phone top-ups — it browses the whole country catalog by brand name. Use **`search_products`** with `operator_id` + `q` only as an alternative rate search API.
 
-### Gift card flow (MCP)
-
-1. **`get_giftcard_brands`** with `country` (ISO-2 or id) and optional `q` (brand keyword) — each brand is an `id_operator`.
-2. **`get_giftcard_brand_products`** with `brand_id` — copy the `token`.
-3. **Guest:** **`create_order`** with `price_token` only (no `phone`) as soon as the denomination is chosen. Show only `payment_link` and `order_id` if present. Guest gift cards are emailed after they pay on doctorsim.com — do not promise the code in chat. **PRO:** **`preview_order`** then **`create_order`** after confirmation. Fulfilled PRO orders return `redemption_code` / `redemption_url` on `get_order_status`.
-
-REST: `GET /giftcards/countries`, `GET /giftcards/brands`, `GET /giftcards/brands/{id}/products`, `POST /orders/preview`, `POST /orders`. Top-up REST lives under `/topup/*` (`/topup/carriers/lookup/{phone}`, `/topup/operators/{id}/rates`); the un-prefixed paths remain as aliases.
-
-`get_operator_rates` totals are indicative. **PRO:** **`preview_order`** is the authoritative debit breakdown. **Guest:** skip preview and create the payment link.
-
 ### Travel eSIM flow (MCP)
 
 When the user wants **international data / travel eSIM** (no phone number required):
@@ -104,7 +94,17 @@ When the user wants **international data / travel eSIM** (no phone number requir
 
 REST equivalents: `GET /esim/destinations`, `GET /esim/products`, `POST /orders/preview`, `POST /orders`, `GET /esim/lines/{iccid}` (`/esim/orders/preview` and `/esim/orders` are aliases).
 
-> Travel eSIM checkout uses the same modes as top-up / gift cards: PRO credits, or a `payment_link` for guest / consumer OAuth.
+> Travel eSIM checkout uses the same modes as top-up and gift cards: PRO credits, or a `payment_link` for guest / consumer OAuth.
+
+### Gift card flow (MCP)
+
+1. **`get_giftcard_brands`** with `country` (ISO-2 or id) and optional `q` (brand keyword) — each brand is an `id_operator`.
+2. **`get_giftcard_brand_products`** with `brand_id` — copy the `token`.
+3. **Guest:** **`create_order`** with `price_token` only (no `phone`) as soon as the denomination is chosen. Show only `payment_link` and `order_id` if present. Guest gift cards are emailed after they pay on doctorsim.com — do not promise the code in chat. **PRO:** **`preview_order`** then **`create_order`** after confirmation. Fulfilled PRO orders return `redemption_code` / `redemption_url` on `get_order_status`.
+
+REST: `GET /giftcards/countries`, `GET /giftcards/brands`, `GET /giftcards/brands/{id}/products`, `POST /orders/preview`, `POST /orders`. Top-up REST lives under `/topup/*` (`/topup/carriers/lookup/{phone}`, `/topup/operators/{id}/rates`); the un-prefixed paths remain as aliases.
+
+`get_operator_rates` totals are indicative. **PRO:** **`preview_order`** is the authoritative debit breakdown. **Guest:** skip preview and create the payment link.
 
 ### Verify MCP Worker (no auth)
 

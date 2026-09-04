@@ -46,25 +46,19 @@ See OpenAPI for full schema: `https://www.doctorsim.com/api-docs/openapi.yaml`
 
 All three products share the same Core endpoints (`POST /orders/preview`, `POST /orders`). The **catalog** and the **JSON body** decide the vertical. **PRO credits:** always preview, show the breakdown, then create. **Guest / consumer `payment_link`:** skip preview and create as soon as the product is chosen.
 
-| | Top-up | Gift cards | Travel eSIM |
+| | Top-up | Travel eSIM | Gift cards |
 |---|---|---|---|
-| Catalog | `/topup/*` (aliases: `/countries`, `/operators/*`, `/products/*`, `/carriers/*`) | `/giftcards/*` | `/esim/*` only — do **not** use `/countries` or `/operators` |
-| How you pick a product | Phone → carrier → `GET /topup/operators/{id}/rates` → copy rate `token` | Country → brand → `GET /giftcards/brands/{id}/products` → copy rate `token` | Destination → `GET /esim/products` → copy `catalog_id` **and** eSIM `price_token` |
-| Create body | `price_token` + `phone` (E.164) | `price_token` only (no phone) | `catalog_id` + eSIM `price_token` (no phone). `type: "esim"` is optional — the token already selects the vertical |
+| Catalog | `/topup/*` (aliases: `/countries`, `/operators/*`, `/products/*`, `/carriers/*`) | `/esim/*` only — do **not** use `/countries` or `/operators` | `/giftcards/*` |
+| How you pick a product | Phone → carrier → `GET /topup/operators/{id}/rates` → copy rate `token` | Destination → `GET /esim/products` → copy `catalog_id` **and** eSIM `price_token` | Country → brand → `GET /giftcards/brands/{id}/products` → copy rate `token` |
+| Create body | `price_token` + `phone` (E.164) | `catalog_id` + eSIM `price_token` (no phone). `type: "esim"` is optional — the token already selects the vertical | `price_token` only (no phone) |
 | What create returns | PRO: `order_id`. Guest / consumer: `payment_link` + `order_id` if present (hash is machine-only) | Same | Same |
-| After payment | Airtime / bundle on the phone | Redemption code or URL | ICCID, LPA, QR, Apple `install_url`. Titular gets the confirmation email |
+| After payment | Airtime / bundle on the phone | ICCID, LPA, QR, Apple `install_url`. Titular gets the confirmation email | Redemption code or URL |
 
 ### Top-up
 
 1. Identify the line: `GET /topup/carriers/lookup/{phone}` (or list operators for a country).
 2. `GET /topup/operators/{id}/rates` — copy `token` from the `rates` array.
 3. Guest: `POST /orders` with `"price_token": "<token>"` and `"phone": "+34…"`. PRO: preview first, then the same create body.
-
-### Gift cards
-
-1. `GET /giftcards/brands?country={iso}` then `GET /giftcards/brands/{id}/products`.
-2. Copy `token` from the `rates` array.
-3. Guest: `POST /orders` with `"price_token": "<token>"` only. PRO: preview first, then create.
 
 ### Travel eSIM (not a top-up)
 
@@ -79,6 +73,12 @@ eSIM is a **plan SKU**, not an operator rate. There is no phone number and no `/
    Returns `payment_link` (show this) and `order_id` when one exists. Buyer types email on `/{locale}/esim/checkout/{hash}` and receives the eSIM by email. Poll `GET /orders?payment_link=` or `GET /orders?checkout_hash=` for status — do not show the hash. Preview is optional for guests.
 4. PRO: `POST /orders/preview` with that same body (`checkout_mode=credits`), then `POST /orders`. Returns `order_id` immediately.
 5. Fulfilled eSIM: `GET /orders/{id}` (or `GET /orders?type=esim`) for `iccid`, `lpa_string`, `qr_code_url`, `install_url`. Remaining data: `GET /esim/lines/{iccid}`.
+
+### Gift cards
+
+1. `GET /giftcards/brands?country={iso}` then `GET /giftcards/brands/{id}/products`.
+2. Copy `token` from the `rates` array.
+3. Guest: `POST /orders` with `"price_token": "<token>"` only. PRO: preview first, then create.
 
 `POST /esim/orders/preview` and `POST /esim/orders` are aliases of the Core `/orders*` calls (same body).
 

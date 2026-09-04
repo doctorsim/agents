@@ -58,34 +58,6 @@ Optional: `operator_id` / `country_id` as cross-checks when using `price_token`.
 
 ---
 
-## Gift cards
-
-1. **Select country** — countries with gift card brands  
-   `GET https://api.doctorsim.com/v2/giftcards/countries`
-
-2. **Search brands** — find the brand (an `id_operator`), then load denominations and copy the `token`  
-   `GET https://api.doctorsim.com/v2/giftcards/brands?country={iso_or_id}` · MCP: `get_giftcard_brands` (default 50/page; when `meta.has_more` is true, pass `cursor=meta.cursor`)  
-   `GET https://api.doctorsim.com/v2/giftcards/brands/{id}/products` · MCP: `get_giftcard_brand_products`
-
-3. **Guest:** `POST https://api.doctorsim.com/v2/orders` with `price_token` only (no `phone`). **PRO:** preview, then place.  
-   MCP: `create_order` (guest) or `preview_order` / `create_order` (PRO)
-
-4. **Monitor** — same as top-up  
-   `GET https://api.doctorsim.com/v2/orders/{id}`
-
-### Gift card order body (typical)
-
-```json
-{
-  "price_token": "<token from rates>",
-  "lang": "en"
-}
-```
-
-Add `phone` or email fields only when the selected product requires them.
-
----
-
 ## Travel eSIM
 
 Catalog lives under `/esim/*`; checkout, history, and status use the shared Core `/orders` spine (the body selects the vertical). MCP mirrors this: `get_esim_*` for the catalog, `preview_order` / `create_order` for checkout (`preview_esim_order` / `create_esim_order` remain as aliases).
@@ -118,6 +90,34 @@ Catalog lives under `/esim/*`; checkout, history, and status use the shared Core
   "currency": "EUR"
 }
 ```
+
+---
+
+## Gift cards
+
+1. **Select country** — countries with gift card brands  
+   `GET https://api.doctorsim.com/v2/giftcards/countries`
+
+2. **Search brands** — find the brand (an `id_operator`), then load denominations and copy the `token`  
+   `GET https://api.doctorsim.com/v2/giftcards/brands?country={iso_or_id}` · MCP: `get_giftcard_brands` (default 50/page; when `meta.has_more` is true, pass `cursor=meta.cursor`)  
+   `GET https://api.doctorsim.com/v2/giftcards/brands/{id}/products` · MCP: `get_giftcard_brand_products`
+
+3. **Guest:** `POST https://api.doctorsim.com/v2/orders` with `price_token` only (no `phone`). **PRO:** preview, then place.  
+   MCP: `create_order` (guest) or `preview_order` / `create_order` (PRO)
+
+4. **Monitor** — same as top-up  
+   `GET https://api.doctorsim.com/v2/orders/{id}`
+
+### Gift card order body (typical)
+
+```json
+{
+  "price_token": "<token from rates>",
+  "lang": "en"
+}
+```
+
+Add `phone` or email fields only when the selected product requires them.
 
 ---
 

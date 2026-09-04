@@ -22,14 +22,14 @@ Public consumer documentation: [MCP Server guide](/api-docs/mcp.html)
 | `get_operator_service_types` | Airtime / data / bundle types |
 | `get_operator_rates` | Live pricing + `token` for orders |
 | `search_products` | Unfiltered catalog search (top-up operators + gift card brands) |
-| `get_giftcard_brands` | Gift card brands for a country (`/giftcards/brands`) |
-| `get_giftcard_brand_products` | Gift card denominations + `token` (`/giftcards/brands/{id}/products`) |
 | `get_esim_destinations` | eSIM destination list |
 | `get_esim_plans` | eSIM plans for a country |
 | `get_esim_plan_detail` | Single eSIM plan detail |
 | `preview_esim_order` | Alias of `preview_order` with `type=esim` (kept for existing connectors) |
 | `create_esim_order` | Alias of `create_order` with `type=esim` (kept for existing connectors) |
 | `get_esim_line` | Remaining data for a titular-owned ICCID (OAuth) |
+| `get_giftcard_brands` | Gift card brands for a country (`/giftcards/brands`) |
+| `get_giftcard_brand_products` | Gift card denominations + `token` (`/giftcards/brands/{id}/products`) |
 | `preview_order` | Price breakdown without placing an order. **Required for PRO credits.** Optional for guest / consumer `payment_link`. |
 | `create_order` | Place order for any vertical (PRO credits, or guest / consumer payment link) |
 | `get_order_status` | Single order status |
@@ -62,13 +62,12 @@ The user must open `payment_link`, enter email, and pay on doctorSIM. Guest prod
 
 ## Purchase flow
 
-### Mobile top-up / gift card
+### Mobile top-up
 
-1. `lookup_carrier` (top-ups) or `get_giftcard_brands` (gift cards)
-2. `get_operator_rates` (top-ups) or `get_giftcard_brand_products` (gift cards) → copy `token`
-3. Guest: `create_order` as soon as the product is chosen (preview optional). PRO: `preview_order` → show breakdown → `create_order` after confirmation
-4. Guest / consumer: share `payment_link`. PRO: `order_id` after credit debit
-5. Monitor via `get_order_status` / `list_orders`
+1. `lookup_carrier` → `get_operator_service_types` → `get_operator_rates` → copy `token`
+2. Guest: `create_order` as soon as the product is chosen (preview optional). PRO: `preview_order` → show breakdown → `create_order` after confirmation
+3. Guest / consumer: share `payment_link`. PRO: `order_id` after credit debit
+4. Monitor via `get_order_status` / `list_orders`
 
 ### Travel eSIM
 
@@ -78,3 +77,10 @@ The user must open `payment_link`, enter email, and pay on doctorSIM. Guest prod
 4. PRO: `preview_order` then `create_order` → credits debit + `order_id`; response carries `type: "esim"`
 5. Monitor via `get_order_status` / `list_orders` (`type=esim`)
 6. Optional: `get_esim_line` with ICCID for remaining data (OAuth)
+
+### Gift cards
+
+1. `get_giftcard_brands` → `get_giftcard_brand_products` → copy `token`
+2. Guest: `create_order` as soon as the denomination is chosen (preview optional). PRO: `preview_order` → show breakdown → `create_order` after confirmation
+3. Guest / consumer: share `payment_link`. PRO: `order_id` after credit debit
+4. Monitor via `get_order_status` / `list_orders`
