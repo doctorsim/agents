@@ -51,7 +51,7 @@ All three products share the same Core endpoints (`POST /orders/preview`, `POST 
 | Catalog | `/topup/*` (aliases: `/countries`, `/operators/*`, `/products/*`, `/carriers/*`) | `/giftcards/*` | `/esim/*` only — do **not** use `/countries` or `/operators` |
 | How you pick a product | Phone → carrier → `GET /topup/operators/{id}/rates` → copy rate `token` | Country → brand → `GET /giftcards/brands/{id}/products` → copy rate `token` | Destination → `GET /esim/products` → copy `catalog_id` **and** eSIM `price_token` |
 | Create body | `price_token` + `phone` (E.164) | `price_token` only (no phone) | `catalog_id` + eSIM `price_token` (no phone). `type: "esim"` is optional — the token already selects the vertical |
-| What create returns | PRO: `order_id`. Guest / consumer OAuth: `payment_link` + `checkout_hash` | Same | Same |
+| What create returns | PRO: `order_id`. Guest / consumer: `payment_link` + `order_id` if present (hash is machine-only) | Same | Same |
 | After payment | Airtime / bundle on the phone | Redemption code or URL | ICCID, LPA, QR, Apple `install_url`. Titular gets the confirmation email |
 
 ### Top-up
@@ -76,7 +76,7 @@ eSIM is a **plan SKU**, not an operator rate. There is no phone number and no `/
    ```json
    { "catalog_id": 42, "price_token": "<esim price_token>", "lang": "en" }
    ```
-   Returns `payment_link` + `checkout_hash` to `/{locale}/esim/checkout/{hash}` on doctorsim.com (plan preloaded; buyer types email there). Poll `GET /orders?checkout_hash=<hash>` until `order_id` appears. Preview is optional for guests.
+   Returns `payment_link` (show this) and `order_id` when one exists. Buyer types email on `/{locale}/esim/checkout/{hash}` and receives the eSIM by email. Poll `GET /orders?payment_link=` or `GET /orders?checkout_hash=` for status — do not show the hash. Preview is optional for guests.
 4. PRO: `POST /orders/preview` with that same body (`checkout_mode=credits`), then `POST /orders`. Returns `order_id` immediately.
 5. Fulfilled eSIM: `GET /orders/{id}` (or `GET /orders?type=esim`) for `iccid`, `lpa_string`, `qr_code_url`, `install_url`. Remaining data: `GET /esim/lines/{iccid}`.
 

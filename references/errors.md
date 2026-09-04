@@ -13,4 +13,4 @@
 | RATE_LIMIT_EXCEEDED | 429 | Tier limit hit |
 | ACCOUNT_NO_EMAIL | 403 | PRO titular has no usable email; eSIM confirmation cannot be sent |
 
-Agents should surface `error.message` from JSON body and retry idempotent reads on 5xx with backoff.
+Agents should surface `error.message` and, when present, `error.next_step` (also formatted on MCP as `CODE — message. Next: …`). Follow **Next** instead of inventing a carrier, token, or hash. Retry idempotent reads on 5xx with backoff.

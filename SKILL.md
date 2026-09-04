@@ -84,7 +84,7 @@ Do **not** use **`search_products`** alone for phone top-ups — it browses the 
 
 1. **`get_giftcard_brands`** with `country` (ISO-2 or id) and optional `q` (brand keyword) — each brand is an `id_operator`.
 2. **`get_giftcard_brand_products`** with `brand_id` — copy the `token`.
-3. **Guest:** **`create_order`** with `price_token` only (no `phone`) as soon as the denomination is chosen. **PRO:** **`preview_order`** then **`create_order`** after confirmation. Fulfilled orders return `redemption_code` / `redemption_url` on `get_order_status`.
+3. **Guest:** **`create_order`** with `price_token` only (no `phone`) as soon as the denomination is chosen. Show only `payment_link` and `order_id` if present. Guest gift cards are emailed after they pay on doctorsim.com — do not promise the code in chat. **PRO:** **`preview_order`** then **`create_order`** after confirmation. Fulfilled PRO orders return `redemption_code` / `redemption_url` on `get_order_status`.
 
 REST: `GET /giftcards/countries`, `GET /giftcards/brands`, `GET /giftcards/brands/{id}/products`, `POST /orders/preview`, `POST /orders`. Top-up REST lives under `/topup/*` (`/topup/carriers/lookup/{phone}`, `/topup/operators/{id}/rates`); the un-prefixed paths remain as aliases.
 
@@ -97,9 +97,9 @@ When the user wants **international data / travel eSIM** (no phone number requir
 1. **`get_esim_destinations`** — list countries/regions with plans; pick `country_iso` (ISO-2: `es`, not `ESP`. Regions: `eu`, `ww`, `as`).
 2. **`get_esim_plans`** with `country_iso` — browse plans for that destination only. ISO-2 (`es`) is a strict match (does **not** include `eu`/`ww` regional or global plans). Use region slugs (`eu`, `ww`, `as`) for those catalogs. Copy `catalog_id` and `price_token`. Each plan includes `unlimited` (boolean). Optional `data_type` (`all` / `unlimited` / `limited`) filters the list; omit or `all` returns both.
 3. Optional: **`get_esim_plan_detail`** for a single SKU (includes `unlimited`).
-4. **Guest / consumer:** skip preview. Call **`create_order`** with `catalog_id` + `price_token` as soon as the plan is chosen. Returns `payment_link` + `checkout_hash` to `/{locale}/esim/checkout/{hash}` on doctorsim.com (plan preloaded; the buyer types their email there). Poll `get_order_status` with the hash. (`create_esim_order` is an alias.)
+4. **Guest / consumer:** skip preview. Call **`create_order`** with `catalog_id` + `price_token` as soon as the plan is chosen. Show the buyer only `payment_link` and `order_id` when one exists. Never display `checkout_hash` (machine id for `get_order_status` — prefer passing `payment_link`). The buyer types their email on the doctorsim.com checkout page and receives the eSIM **by email** after payment — do not promise an in-chat QR for guests. (`create_esim_order` is an alias.)
 5. **PRO credits:** **`preview_order`** first (mandatory — same body; no credits deducted yet; returns `unlimited` and `data_gb`), confirm, then **`create_order`**. Debits credits and returns `order_id`. Sandbox keys (`test_*`) preview the **sandbox** catalog and create a fake eSIM (`sandbox_esim_{id}`, no credit debit). Response carries `type: "esim"`. (`preview_esim_order` is an alias.)
-6. Monitor with **`get_order_status`** or **`list_orders`** (`type=esim`). Fulfilled eSIM includes `iccid`, `lpa_string`, Apple `install_url`, and a hosted PNG `qr_code_url`. Single-order status also includes remaining `balance_amount` (provider refresh if last check is older than five minutes). List rows set `balance_amount` to `per order basis`. Use `iccid` with **`get_esim_line`**.
+6. Monitor with **`get_order_status`** (guest: pass `payment_link`; PRO: pass `order_id`) or **`list_orders`** (`type=esim`). Fulfilled eSIM includes `iccid`, `lpa_string`, Apple `install_url`, and a hosted PNG `qr_code_url`. Single-order status also includes remaining `balance_amount` (provider refresh if last check is older than five minutes). List rows set `balance_amount` to `per order basis`. Use `iccid` with **`get_esim_line`**. Show only `show_to_user` fields. Never display `checkout_hash`.
 7. Optional: **`get_esim_line`** with the ICCID (OAuth `orders:read`) for remaining data. The line is the same on every device. The API refreshes from the provider only when the last check is older than five minutes.
 
 REST equivalents: `GET /esim/destinations`, `GET /esim/products`, `POST /orders/preview`, `POST /orders`, `GET /esim/lines/{iccid}` (`/esim/orders/preview` and `/esim/orders` are aliases).
@@ -118,6 +118,10 @@ curl -s https://api.doctorsim.com/mcp/health | jq .
 ```
 
 > **Do not configure stdio for remote connectors.** stdio is optional and only for local IDE plugins (Cursor, Claude Desktop). See [local MCP setup](https://www.doctorsim.com/agents/references/local-mcp.md) if you need a local process — not required for Claude.ai or ChatGPT.
+
+## Errors
+
+Every failed tool result includes `CODE — message. Next: …`. Follow **Next** (link account / pick another plan / retry). Do not invent carriers, tokens, or hashes.
 
 ## Credits
 

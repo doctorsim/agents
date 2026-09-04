@@ -45,19 +45,20 @@ Public consumer documentation: [MCP Server guide](/api-docs/mcp.html)
 
 ### Regular consumer (payment link)
 
-`create_order` returns:
+`create_order` returns a `payment_link` (the only URL to show the buyer) and `order_id` when one exists. `checkout_hash` is a machine identifier for `get_order_status` — never display or read it aloud. Prefer `get_order_status({ payment_link })`.
 
 ```json
 {
   "checkout_mode": "payment_link",
-  "checkout_hash": "abc123...",
   "payment_link": "https://www.doctorsim.com/en/es/topup-phone/checkout/abc123...",
+  "order_id": null,
   "status": "awaiting_payment",
-  "expires_at": "2026-06-12T15:00:00Z"
+  "expires_at": "2026-06-12T15:00:00Z",
+  "show_to_user": { "payment_link": "https://www.doctorsim.com/en/es/topup-phone/checkout/abc123..." }
 }
 ```
 
-The user must open `payment_link` and pay on doctorSIM. Poll with `checkout_hash` until `order_id` appears.
+The user must open `payment_link`, enter email, and pay on doctorSIM. Guest products are delivered by email. Poll with `payment_link` or `order_id` if you need status — do not promise in-chat QR/code for guests.
 
 ## Purchase flow
 

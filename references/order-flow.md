@@ -96,7 +96,7 @@ Catalog lives under `/esim/*`; checkout, history, and status use the shared Core
 2. **List plans** — pick `catalog_id` and `price_token`. `country_iso` is ISO-2 (`es`) or a region slug (`eu`, `ww`, `as`). Each plan includes `unlimited` (boolean). Optional `data_type=unlimited` or `limited`  
    `GET https://api.doctorsim.com/v2/esim/products?country_iso=es` · MCP: `get_esim_plans`
 
-3. **Guest / consumer:** skip preview. Place the order as soon as the plan is chosen. Returns `payment_link` + `checkout_hash` to `/{locale}/esim/checkout/{hash}` on doctorsim.com (plan preloaded; buyer types email there).  
+3. **Guest / consumer:** skip preview. Place the order as soon as the plan is chosen. Show only `payment_link` and `order_id` when one exists. Buyer types email on `/{locale}/esim/checkout/{hash}` and receives the eSIM by email after payment. Never display `checkout_hash`.
    `POST https://api.doctorsim.com/v2/orders` · MCP: `create_order` (alias: `create_esim_order`; REST alias `/esim/orders`)
 
 4. **PRO credits:** preview first (mandatory), then place. Debits credits and returns `order_id`. Sandbox keys (`test_*`) preview the sandbox catalog and create a fake eSIM (`sandbox_esim_{id}`, no credit debit). Response carries `type: "esim"`  
