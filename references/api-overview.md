@@ -70,7 +70,7 @@ eSIM is a **plan SKU**, not an operator rate. There is no phone number and no `/
    ```json
    { "catalog_id": 42, "price_token": "<esim price_token>", "lang": "en" }
    ```
-   Returns `payment_link` (show this) and `order_id` when one exists. Buyer types email on `/{locale}/esim/checkout/{hash}` and receives the eSIM by email. Poll `GET /orders?payment_link=` or `GET /orders?checkout_hash=` for status — do not show the hash. Preview is optional for guests.
+   Returns `payment_link` (show this) and `order_id` when one exists. Buyer types email on `/{locale}/esim/checkout/{hash}` and receives the eSIM by email. Poll `GET /orders/checkout?payment_link=` (or `checkout_hash`) with **no login** — do not show the hash. Sequential `GET /orders/{id}` always requires Authorization. Preview is optional for guests.
 4. PRO: `POST /orders/preview` with that same body (`checkout_mode=credits`), then `POST /orders`. Returns `order_id` immediately.
 5. Fulfilled eSIM: `GET /orders/{id}` (or `GET /orders?type=esim`) for `iccid`, `lpa_string`, `qr_code_url`, `install_url`. Remaining data: `GET /esim/lines/{iccid}`.
 
