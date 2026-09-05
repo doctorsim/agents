@@ -5,6 +5,7 @@ Public consumer documentation: [MCP Server guide](/api-docs/mcp.html)
 ## Endpoint
 
 - **Streamable HTTP:** `https://api.doctorsim.com/mcp` (Cloudflare Worker — same URL on mydev3; the website does not serve `/mcp`)
+- **Streamable HTTP, account required:** `https://api.doctorsim.com/mcp/pro` — same tools, but every request needs an OAuth Bearer (`initialize` answers 401 + `WWW-Authenticate`). Use it on hosts that only start OAuth when the first `initialize` is 401 (Grok connectors) and you want PRO credits / order history.
 - **Server card:** `/.well-known/mcp/server-card.json`
 
 ## Authentication
