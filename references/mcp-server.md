@@ -42,7 +42,7 @@ Public consumer documentation: [MCP Server guide](/api-docs/mcp.html)
 
 ### PRO (credit checkout)
 
-`create_order` debits prepaid credits and returns `order_id` immediately.
+`create_order` debits prepaid credits and always returns `order_id`, `status`, and `credits_used`. Pass a unique `idempotency_key` per SKU. If `order_id` is missing, `list_orders` / `get_order_status` — never re-create.
 
 ### Regular consumer (payment link)
 
@@ -82,6 +82,6 @@ The user must open `payment_link`, enter email, and pay on doctorSIM. Guest prod
 ### Gift cards
 
 1. `get_giftcard_brands` → `get_giftcard_brand_products` → copy `token`
-2. Guest: `create_order` as soon as the denomination is chosen (preview optional). PRO: `preview_order` → show breakdown → `create_order` after confirmation
-3. Guest / consumer: share `payment_link`. PRO: `order_id` after credit debit
+2. Guest: `create_order` as soon as the denomination is chosen (preview optional). PRO: `preview_order` → show breakdown → `create_order` after confirmation with a unique `idempotency_key`
+3. Guest / consumer: share `payment_link`. PRO: `order_id` + `status` + `credits_used` after credit debit. Multi-SKU: distinct idempotency keys. No `order_id` → `list_orders` / `get_order_status`, never re-create
 4. Monitor via `get_order_status` / `list_orders`

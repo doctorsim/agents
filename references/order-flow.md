@@ -131,7 +131,13 @@ Requires `orders:write` scope (OAuth) or a `read-write` API key for `POST /order
 
 ## Idempotency
 
-Send an `Idempotency-Key` header on `POST /orders` to safely retry agent actions without duplicate charges.
+Send an `Idempotency-Key` header **or** JSON/MCP field `idempotency_key` on `POST /orders` / `create_order`. Same key + same account (TTL 24h) returns the original order — no second charge. Same key + different body → `409 IDEMPOTENCY_CONFLICT`.
+
+**Multi-SKU:** one `create_order` per denomination, each with a **distinct** key (e.g. `gc-amazon-es-10`, `gc-amazon-es-15`).
+
+**Ambiguous success:** if the tool result lacks `order_id`, call `list_orders` / `get_order_status` before any retry. Never re-create. Gateway prose (authorization receipts) is not a confirmation.
+
+MCP `create_order` forwards `idempotency_key` as `Idempotency-Key` to API v2.
 
 ## Sandbox
 

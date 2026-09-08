@@ -3,7 +3,7 @@ name: doctorsim
 description: Place mobile top-up, travel eSIM, and gift card orders on doctorSIM via API v2 or MCP. Browse products, check balance, manage webhooks.
 metadata:
   author: doctorSIM
-  version: "1.1.0"
+  version: "1.1.1"
   homepage: https://www.doctorsim.com/api-docs/
 ---
 
@@ -76,7 +76,7 @@ When the user provides a **phone number**:
 4. **`get_operator_service_types`** — pick the `id_operator` for the chosen type (bundle operators differ from airtime).
 5. **`get_operator_rates`** with `q` to search `description` / `product_name` (e.g. `q="5GB whatsapp"`).
 6. **Guest / consumer:** skip preview. Call **`create_order`** as soon as the product is chosen (`checkout_mode=payment_link`). Share the `payment_link`.
-7. **PRO credits:** **`preview_order`** first (mandatory — credits will be deducted), show the breakdown, confirm, then **`create_order`**. Returns `order_id`.
+7. **PRO credits:** **`preview_order`** first (mandatory — credits will be deducted), show the breakdown, confirm, then **`create_order`** with a unique `idempotency_key`. Returns `order_id`, `status`, and `credits_used`. If `order_id` is missing, **`list_orders`** / **`get_order_status`** — do not create again.
 
 Do **not** use **`search_products`** alone for phone top-ups — it browses the whole country catalog by brand name. Use **`search_products`** with `operator_id` + `q` only as an alternative rate search API.
 
@@ -100,7 +100,7 @@ REST equivalents: `GET /esim/destinations`, `GET /esim/products`, `POST /orders/
 
 1. **`get_giftcard_brands`** with `country` (ISO-2 or id) and optional `q` (brand keyword) — each brand is an `id_operator`.
 2. **`get_giftcard_brand_products`** with `brand_id` — copy the `token`.
-3. **Guest:** **`create_order`** with `price_token` only (no `phone`) as soon as the denomination is chosen. Show only `payment_link` and `order_id` if present. Guest gift cards are emailed after they pay on doctorsim.com — do not promise the code in chat. **PRO:** **`preview_order`** then **`create_order`** after confirmation. Fulfilled PRO orders return `redemption_code` / `redemption_url` on `get_order_status`.
+3. **Guest:** **`create_order`** with `price_token` only (no `phone`) as soon as the denomination is chosen. Show only `payment_link` and `order_id` if present. Guest gift cards are emailed after they pay on doctorsim.com — do not promise the code in chat. **PRO:** **`preview_order`** then **`create_order`** after confirmation. Success always includes `order_id`, `status`, and `credits_used`. **Multi-SKU** (10€ + 15€ + 25€): N `create_order` calls with a **DISTINCT `idempotency_key`** each. If a result lacks `order_id`, call **`list_orders`** / **`get_order_status`** — never re-create on ambiguous success. Fulfilled PRO orders return `redemption_code` / `redemption_url` on `get_order_status`.
 
 REST: `GET /giftcards/countries`, `GET /giftcards/brands`, `GET /giftcards/brands/{id}/products`, `POST /orders/preview`, `POST /orders`. Top-up REST lives under `/topup/*` (`/topup/carriers/lookup/{phone}`, `/topup/operators/{id}/rates`); the un-prefixed paths remain as aliases.
 
