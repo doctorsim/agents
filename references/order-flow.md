@@ -54,7 +54,7 @@ When the user gives a phone number (e.g. `+52 222 123 1231`):
 }
 ```
 
-Optional: `operator_id` / `country_id` as cross-checks when using `price_token`.
+Do **not** send `country_id` when using `price_token` — the token already encodes the destination. If you must send it, copy `id_country` from `/countries` or product search (Spain=`34`). Never invent a number. Unknown IDs are ignored; a known country that does not match the token still fails.
 
 ---
 
@@ -117,7 +117,7 @@ Catalog lives under `/esim/*`; checkout, history, and status use the shared Core
 }
 ```
 
-Add `phone` or email fields only when the selected product requires them.
+Do not add `country_id` or `phone` unless the selected product requires a recipient phone (mobile top-up).
 
 ---
 
