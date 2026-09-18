@@ -10,7 +10,7 @@ Public consumer documentation: [MCP Server guide](/api-docs/mcp.html)
 
 ## Authentication
 
-- **Remote connectors (Claude, ChatGPT):** OAuth 2.0 with Dynamic Client Registration + PKCE. See [auth.md](/auth.md).
+- **Remote connectors (Claude, ChatGPT, Grok, Grok Bot):** OAuth 2.0 with Dynamic Client Registration + PKCE. See [auth.md](/auth.md). Grok Bot install: [grok-bot.md](/agents/references/grok-bot.md).
 - **API keys:** PRO accounts only — `Authorization: Bearer {api_id}:{api_secret}`
 
 ## Tools

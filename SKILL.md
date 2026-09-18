@@ -44,7 +44,7 @@ curl -s https://api.doctorsim.com/v2/status
 curl -s https://api.doctorsim.com/v2/countries
 ```
 
-## MCP (remote — Claude.ai, ChatGPT, Grok)
+## MCP (remote — Claude.ai, ChatGPT, Grok, Grok Bot)
 
 Remote connectors use **Streamable HTTP only**. The MCP endpoint runs on Cloudflare Workers and forwards an optional OAuth Bearer token to API v2.
 
@@ -54,13 +54,18 @@ Remote connectors use **Streamable HTTP only**. The MCP endpoint runs on Cloudfl
 
 ### Setup (guest-first)
 
-1. Add a **custom MCP connector** with URL `https://api.doctorsim.com/mcp`.
-2. **No OAuth required at setup** — catalog and payment-link checkout tools use `noauth`. ChatGPT can connect immediately.
+1. Add a **custom MCP connector** with URL `https://api.doctorsim.com/mcp`. Headers empty. Do not paste an API key.
+   - **Grok Bot:** Settings → Plugins → custom MCP (name `doctorSIM`). Click **Authenticate**, then Sign in or Continue as guest. Enable on any bot or `@doctorSIM`. Full steps: [Install on Grok](https://www.doctorsim.com/agents/references/grok-bot.md).
+   - **grok.com:** [connectors](https://grok.com/connectors) → New → Custom. If Grok asks for OAuth credentials, use the published public Client ID in grok-bot.md.
+   - **Claude / ChatGPT:** leave Client ID / Secret blank. Catalog tools use `noauth` (lazy auth).
+   - **Grok Build marketplace:** after the xAI catalog PR, install **doctorSIM** from `/plugin`. Until then use custom MCP.
+2. **Claude / ChatGPT:** no OAuth at setup — catalog and payment-link checkout work immediately.
+   **Grok / Grok Bot:** auth is chosen **on add** (Continue as guest or Sign in). Grok does not start OAuth from a mid-chat 401 — use Reauthenticate to upgrade a guest token.
 3. **Optional account linking** — only when the user asks for PRO credits, order history, or saved settings:
-   - Leave OAuth Client ID/Secret blank; DCR + PKCE handles registration.
+   - Claude / ChatGPT / Cursor DCR: leave OAuth Client ID/Secret blank; DCR + PKCE handles registration.
    - Authorization server: `https://www.doctorsim.com/.well-known/oauth-authorization-server`
    - See `https://www.doctorsim.com/auth.md` for scopes.
-4. Protected tools (`get_balance`, `list_orders`, `list_webhooks`) return an auth challenge when called without a token.
+4. Protected tools (`get_balance`, `list_orders`, `list_webhooks`) return an auth challenge when called without a token. On Grok that message means Reauthenticate → Sign in.
 
 ### Before create_order (model script)
 
@@ -135,6 +140,7 @@ PRO orders debit prepaid account credits. Guest and consumer OAuth users pay via
 - [Order flow](https://www.doctorsim.com/agents/references/order-flow.md)
 - [Webhooks](https://www.doctorsim.com/agents/references/webhooks.md)
 - [Error codes](https://www.doctorsim.com/agents/references/errors.md)
+- [Install on Grok / Grok Bot](https://www.doctorsim.com/agents/references/grok-bot.md)
 - [Local MCP — Cursor / Claude Desktop only](https://www.doctorsim.com/agents/references/local-mcp.md)
 
 ## Discovery URLs

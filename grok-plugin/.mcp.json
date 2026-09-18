@@ -1,0 +1,9 @@
+{
+    "mcpServers": {
+        "doctorsim": {
+            "type": "http",
+            "url": "https://api.doctorsim.com/mcp",
+            "note": "doctorSIM hosted MCP (Streamable HTTP). Add with empty headers. Grok / Grok Bot choose Sign in or Continue as guest on add. Guest catalog and payment-link checkout need no doctorSIM login. Do not put API keys here."
+        }
+    }
+}

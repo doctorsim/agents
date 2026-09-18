@@ -1,0 +1,25 @@
+{
+    "name": "doctorsim",
+    "description": "Mobile top-ups, digital gift cards, and travel eSIMs. Agents browse catalogs, preview prices, and place orders via doctorSIM REST API v2 and MCP.",
+    "category": "commerce",
+    "source": {
+        "source": "url",
+        "url": "https://github.com/doctorsim/agents.git",
+        "sha": "REPLACE_WITH_40_CHAR_COMMIT_SHA",
+        "path": "grok-plugin"
+    },
+    "homepage": "https://www.doctorsim.com/developers-agents.html",
+    "keywords": [
+        "doctorsim",
+        "doctor sim",
+        "mobile topup",
+        "gift card",
+        "travel esim",
+        "esim"
+    ],
+    "domains": [
+        "doctorsim.com",
+        "www.doctorsim.com",
+        "api.doctorsim.com"
+    ]
+}

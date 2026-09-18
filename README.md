@@ -10,13 +10,14 @@ This repository is generated automatically from the doctorSIM website on every c
 |---|---|
 | `SKILL.md` | Primary agent skill (API v2 + MCP, OAuth) |
 | `index.json` | agentskills.io discovery index (with `sha256`) |
-| `references/` | API overview, order flow, webhooks, errors, local MCP |
+| `references/` | API overview, order flow, webhooks, errors, Grok Bot, local MCP |
+| `grok-plugin/` | Tavily-shaped Grok Bot / Grok Build plugin (MCP + skill) |
 
 ## Connect via MCP
 
-Remote connector URL (Claude.ai, ChatGPT): `https://api.doctorsim.com/mcp`
+Remote connector URL (Claude.ai, ChatGPT, Grok, Grok Bot): `https://api.doctorsim.com/mcp`
 
-OAuth is dynamic (RFC 7591) with PKCE — leave any Client ID/Secret fields blank. Full guide: https://www.doctorsim.com/auth.md
+Claude / ChatGPT: leave Client ID/Secret blank (DCR + PKCE). Grok Bot: Authenticate on add. grok.com may ask for the published public Client ID in grok-bot.md. Full guide: https://www.doctorsim.com/auth.md
 
 ## Verify integrity
 

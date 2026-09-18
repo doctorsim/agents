@@ -1,0 +1,21 @@
+{
+    "name": "doctorsim",
+    "version": "1.0.0",
+    "description": "Mobile top-ups, digital gift cards, and travel eSIMs via doctorSIM's hosted MCP server. Browse catalogs, preview prices, and place orders (payment link or PRO credits).",
+    "author": {
+        "name": "doctorSIM",
+        "url": "https://www.doctorsim.com"
+    },
+    "repository": "https://github.com/doctorsim/agents",
+    "homepage": "https://www.doctorsim.com/developers-agents.html",
+    "license": "MIT",
+    "keywords": [
+        "doctorsim",
+        "mobile-topup",
+        "gift-cards",
+        "esim",
+        "travel-esim",
+        "mcp",
+        "agentic-commerce"
+    ]
+}
