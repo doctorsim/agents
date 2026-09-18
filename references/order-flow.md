@@ -75,7 +75,7 @@ Catalog lives under `/esim/*`; checkout, history, and status use the shared Core
    `POST https://api.doctorsim.com/v2/orders/preview` then `POST https://api.doctorsim.com/v2/orders` · MCP: `preview_order` / `create_order`
 
 5. **Monitor** — guest: `GET https://api.doctorsim.com/v2/orders/checkout?payment_link=…` (or `checkout_hash`) — **no login**; the hash is the capability. Sequential `GET /orders/{id}` **always requires Authorization** (IDs are enumerable). PRO: `GET https://api.doctorsim.com/v2/orders/{id}` or `list_orders?type=esim`.  
-   When `fulfilled`, the same guest poll includes `iccid`, `lpa_string`, Apple `install_url`, and a hosted PNG `qr_code_url` — show those in chat. Single-order status also returns remaining `balance_amount` (provider refresh if last check is older than five minutes). List rows set `balance_amount` to `per order basis`.
+   When `fulfilled`, the same guest poll includes `iccid`, `lpa_string`, Apple `install_url`, and a hosted PNG `qr_code_url` — show those in chat. Single-order status also returns remaining `balance_amount` (provider refresh if last check is older than five minutes). List rows set `balance_amount` to `per order basis`. eSIM list/detail/line also include nested `consumption` (cron snapshot).
 
 6. **Line remaining data** — `GET https://api.doctorsim.com/v2/esim/lines/{iccid}` · MCP: `get_esim_line`  
    Requires OAuth/API key (`orders:read`). The ICCID line is the same on every device. Provider refresh only when last check is older than five minutes.
