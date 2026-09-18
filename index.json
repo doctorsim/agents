@@ -6,7 +6,7 @@
     {
       "name": "doctorsim",
       "type": "skill",
-      "description": "Browse, fund, and place mobile top-up and gift card orders via doctorSIM API v2 or MCP.",
+      "description": "Browse, fund, and place mobile top-up, travel eSIM, and gift card orders via doctorSIM API v2 or MCP.",
       "url": "https://www.doctorsim.com/agents/SKILL.md",
       "sha256": "7208dbc84e2b26c58fbef44d2d233ecc9bf0da973555f2f175129be1c1191275"
     }
