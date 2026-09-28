@@ -2,6 +2,21 @@
 
 Add doctorSIM to **Grok Bot**, **Grok Build**, or **grok.com** so the assistant can buy mobile top-ups, gift cards, and travel eSIMs.
 
+## Official Grok Bot template
+
+Import the **doctorSIM Shop** template (signed **by doctorSIM**, not a personal share):
+
+**[Add to Grok Bot](https://x.ai/bot/SwoMVyBr2yGUQM776t29-)**
+
+Grok Bot templates **cannot package custom MCPs**. After you import the template you still must connect the hosted doctorSIM MCP yourself:
+
+1. Add a **custom MCP** named `doctorSIM`.
+2. Server URL: `https://api.doctorsim.com/mcp` (production: `https://api.doctorsim.com/mcp`).
+3. Headers: leave empty.
+4. Save → **Authenticate** → **Continue as guest** (catalog + payment-link checkout) or **Sign in** (PRO).
+
+Do **not** paste an API key.
+
 **MCP URL:** `https://api.doctorsim.com/mcp`
 
 This is the same hosted Worker used by Claude and ChatGPT. Add a **custom MCP** (not a marketplace plugin). Leave headers empty. Do **not** paste an API key. Do **not** ask the bot to add the URL — that often attaches a saved key and leaves the host with 0 tools.
