@@ -2,6 +2,8 @@
 
 | Code | HTTP | Meaning |
 |---|---|---|
+| MISSING_AUTH | 401 | No `Authorization` header on an account-only route (eSIM line / top-up E1–E3 / E6) |
+| INVALID_AUTH_SCHEME | 401 | `Authorization` is present but is not `Bearer` (e.g. `Basic`) |
 | INVALID_API_KEY | 401 | Unknown api_id |
 | INVALID_API_SECRET | 401 | Wrong secret |
 | INVALID_TOKEN | 401 | OAuth JWT invalid/expired |

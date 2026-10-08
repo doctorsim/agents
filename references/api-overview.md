@@ -31,7 +31,10 @@ Or OAuth JWT from `POST https://www.doctorsim.com/oauth/token`.
 | GET | /esim/destinations | read |
 | GET | /esim/products | read |
 | GET | /esim/products/{catalog_id} | read |
-| GET | /esim/lines/{iccid} | read |
+| GET | /esim/lines/{iccid} | read (linked Bearer; no header → 401 MISSING_AUTH; wrong scheme → 401 INVALID_AUTH_SCHEME) |
+| GET | /esim/lines/{iccid}/topup-plans | read (same 401 codes; no guest) |
+| POST | /esim/lines/{iccid}/topups/preview | read (same 401 codes; no guest) |
+| POST | /esim/lines/{iccid}/topups | write (same 401 codes; no guest) |
 | POST | /orders/preview | read (every vertical; `/esim/orders/preview` is an alias) |
 | POST | /orders | write (every vertical; `/esim/orders` is an alias) |
 | GET | /orders | read |

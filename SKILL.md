@@ -128,6 +128,8 @@ curl -s https://api.doctorsim.com/mcp/health | jq .
 
 Every failed tool result includes `CODE — message. Next: …`. Follow **Next** (link account / pick another plan / retry). Do not invent carriers, tokens, or hashes.
 
+ICCID line and top-up routes (`GET /esim/lines/{iccid}`, `GET /esim/lines/{iccid}/topup-plans`, `POST …/topups/preview`, `POST …/topups`) require a linked Bearer. No `Authorization` header is `401 MISSING_AUTH`. A non-Bearer scheme (`Authorization: Basic …`) is `401 INVALID_AUTH_SCHEME`.
+
 ## Credits
 
 PRO orders debit prepaid account credits. Guest and consumer OAuth users pay via `payment_link` on doctorsim.com. Fund PRO credits via the web dashboard.
