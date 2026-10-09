@@ -145,7 +145,7 @@ MCP `create_order` forwards `idempotency_key` as `Idempotency-Key` to API v2.
 
 Use sandbox API keys (`test_*`) or OAuth with the `sandbox` scope (`env: sandbox` tokens). Nothing is charged or delivered.
 
-1. `POST https://api.doctorsim.com/v2/orders` → `order_id` like `sandbox_01ca75fd73c6202d`, `status: processing`, `credits_used: "0.00"`, `simulated_credits_used` (what a live key would debit).
+1. `POST https://api.doctorsim.com/v2/orders` → `order_id` like `sandbox_01ca75fd73c6202d`, `status: processing`, `credits_used: "0.00"`, `simulated_credits_used` (gross a live key would debit = sandbox preview `total_cost_eur`: cost + service fee + SMS fee; status `amount` is the same value, history `simulated_amount` is its negative).
 2. `GET https://api.doctorsim.com/v2/orders/sandbox_01ca75fd73c6202d` → `processing` for ~3 s, then the simulated outcome.
 3. Default outcome `fulfilled`. Choose another with body `sandbox_outcome` (`failed`, `cancelled`, `refunded`) or a top-up phone ending in `0001` (failed), `0002` (cancelled), `0003` (refunded).
 4. `GET /orders`, `GET /balance` (virtual, `simulated: true`) and `GET /balance/history` return sandbox data for sandbox credentials. Sandbox credentials cannot read production orders (`403 SANDBOX_READ_DENIED`).
