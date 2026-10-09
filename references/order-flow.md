@@ -131,7 +131,9 @@ Requires `orders:write` scope (OAuth) or a `read-write` API key for `POST /order
 
 ## Idempotency
 
-Send an `Idempotency-Key` header **or** JSON/MCP field `idempotency_key` on `POST /orders` / `create_order`. Same key + same account (TTL 24h) returns the original order — no second charge. Same key + different body → `409 IDEMPOTENCY_CONFLICT`.
+Send an `Idempotency-Key` header **or** JSON/MCP field `idempotency_key` on `POST /orders` / `create_order`. Same key + same credential + same body (TTL 24h) returns the original order (`Idempotent-Replayed: true`) — no second charge. Same key + different body → `409 IDEMPOTENCY_CONFLICT`. Retry while the first request is still running → `409 IDEMPOTENCY_IN_PROGRESS` (retry the same request after `Retry-After`).
+
+**Recover after a timeout (no `order_id` received):** `GET https://api.doctorsim.com/v2/orders/lookup?idempotency_key=<same key>` (MCP: `get_order_status` with `idempotency_key`). Read-only; works with any credential of the same account and environment. `404 ORDER_NOT_FOUND` = nothing was created, so re-sending the same create with the same key is safe.
 
 **Multi-SKU:** one `create_order` per denomination, each with a **distinct** key (e.g. `gc-amazon-es-10`, `gc-amazon-es-15`).
 
@@ -141,7 +143,24 @@ MCP `create_order` forwards `idempotency_key` as `Idempotency-Key` to API v2.
 
 ## Sandbox
 
-Use sandbox API keys (`test_*`) or an OAuth client on a test titular. Sandbox orders simulate success without carrier or provider delivery.
+Use sandbox API keys (`test_*`) or OAuth with the `sandbox` scope (`env: sandbox` tokens). Nothing is charged or delivered.
+
+1. `POST https://api.doctorsim.com/v2/orders` → `order_id` like `sandbox_01ca75fd73c6202d`, `status: processing`, `credits_used: "0.00"`, `simulated_credits_used` (what a live key would debit).
+2. `GET https://api.doctorsim.com/v2/orders/sandbox_01ca75fd73c6202d` → `processing` for ~3 s, then the simulated outcome.
+3. Default outcome `fulfilled`. Choose another with body `sandbox_outcome` (`failed`, `cancelled`, `refunded`) or a top-up phone ending in `0001` (failed), `0002` (cancelled), `0003` (refunded).
+4. `GET /orders`, `GET /balance` (virtual, `simulated: true`) and `GET /balance/history` return sandbox data for sandbox credentials. Sandbox credentials cannot read production orders (`403 SANDBOX_READ_DENIED`).
+
+## Status and `credits_used`
+
+| `status` | Meaning |
+|---|---|
+| `processing` | Being fulfilled |
+| `fulfilled` | Delivered (`delivery_status: COMPLETED`) |
+| `failed` | Delivery failed (`delivery_status: FAILED`, see `error_code`) — may later become `refunded` |
+| `cancelled` | Cancelled before delivery (`delivery_status: CANCELLED`) |
+| `refunded` | Payment refunded (`payment_status: Refunded`); PRO credit refunds show as a positive line in `GET /balance/history` |
+
+`credits_used` (PRO credits) is the gross EUR debit: product cost + service fee + SMS fee (when `sms_notification=true`), equal to the preview total. It is never rewritten when an order fails or is refunded.
 
 ## Manual revision
 

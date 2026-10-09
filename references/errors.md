@@ -14,5 +14,12 @@
 | IP_NOT_ALLOWED | 403 | Caller IP is not in the key allowlist. `error.message` and `error.client_ip` include the rejected IP. |
 | RATE_LIMIT_EXCEEDED | 429 | Tier limit hit |
 | ACCOUNT_NO_EMAIL | 403 | PRO titular has no usable email; eSIM confirmation cannot be sent |
+| SANDBOX_READ_DENIED | 403 | Sandbox credential asked for a production (numeric) order id |
+| NOT_FOUND | 404 | Unknown `/v2` route or malformed id (same envelope as every other error) |
+| ORDER_NOT_FOUND | 404 | No such order for this account and environment |
+| IDEMPOTENCY_CONFLICT | 409 | Idempotency-Key reused with a different body — use a new key for a new purchase |
+| IDEMPOTENCY_IN_PROGRESS | 409 | First request with this key still running — retry the same request (`Retry-After`) |
+| IDEMPOTENCY_OUTCOME_UNKNOWN | 409 | First request with this key ended without an outcome — check `GET /orders` before using a new key |
+| INVALID_SANDBOX_OUTCOME | 400 | `sandbox_outcome` is not fulfilled, failed, cancelled or refunded |
 
 Agents should surface `error.message` and, when present, `error.next_step` (also formatted on MCP as `CODE — message. Next: …`). Follow **Next** instead of inventing a carrier, token, or hash. Retry idempotent reads on 5xx with backoff.

@@ -64,7 +64,7 @@ Remote connectors use **Streamable HTTP only**. The MCP endpoint runs on Cloudfl
 3. **Optional account linking** — only when the user asks for PRO credits, order history, or saved settings:
    - Claude / ChatGPT / Cursor DCR: leave OAuth Client ID/Secret blank; DCR + PKCE handles registration.
    - Authorization server: `https://www.doctorsim.com/.well-known/oauth-authorization-server`
-   - See `https://www.doctorsim.com/auth.md` for scopes.
+   - See `https://www.doctorsim.com/auth.md` for scopes. Add the `sandbox` scope (or `environment=sandbox` on `/oauth/authorize`) for sandbox tokens (`env: sandbox`): test orders only, no charges.
 4. Protected tools (`get_balance`, `list_orders`, `list_webhooks`) return an auth challenge when called without a token. On Grok that message means Reauthenticate → Sign in.
 
 ### Before create_order (model script)
@@ -81,7 +81,7 @@ When the user provides a **phone number**:
 4. **`get_operator_service_types`** — pick the `id_operator` for the chosen type (bundle operators differ from airtime).
 5. **`get_operator_rates`** with `q` to search `description` / `product_name` (e.g. `q="5GB whatsapp"`).
 6. **Guest / consumer:** skip preview. Call **`create_order`** as soon as the product is chosen (`checkout_mode=payment_link`). Share the `payment_link`.
-7. **PRO credits:** **`preview_order`** first (mandatory — credits will be deducted), show the breakdown, confirm, then **`create_order`** with a unique `idempotency_key`. Returns `order_id`, `status`, and `credits_used`. If `order_id` is missing, **`list_orders`** / **`get_order_status`** — do not create again.
+7. **PRO credits:** **`preview_order`** first (mandatory — credits will be deducted), show the breakdown, confirm, then **`create_order`** with a unique `idempotency_key`. Returns `order_id`, `status`, and `credits_used` (gross EUR debit incl. service fee and SMS fee). If `order_id` is missing or the call timed out, **`get_order_status`** with the same `idempotency_key` (or **`list_orders`**) — do not create again.
 
 Do **not** use **`search_products`** alone for phone top-ups — it browses the whole country catalog by brand name. Use **`search_products`** with `operator_id` + `q` only as an alternative rate search API.
 
